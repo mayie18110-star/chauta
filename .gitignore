@@ -1,0 +1,30 @@
+# Ambiente virtual
+venv/
+env/
+ENV/
+.venv
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Carpeta de uploads (opcional, cambiar según necesites)
+# static/img/uploads/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

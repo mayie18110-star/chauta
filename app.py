@@ -5,6 +5,10 @@ from datetime import datetime
 from decimal import Decimal
 import os
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -16,13 +20,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Configuración de base de datos
+# Configuración de base de datos desde variables de entorno
 db_config = {
-    'host': '127.0.0.1',
-    'port': 3307,
-    'user': 'root',
-    'password': 'Mariaf18',
-    'database': 'base_chauta'
+    'host': os.getenv('DB_HOST', '127.0.0.1'),
+    'port': int(os.getenv('DB_PORT', 3307)),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD', 'Mariaf18'),
+    'database': os.getenv('DB_NAME', 'base_chauta'),
+    'autocommit': False,
+    'use_unicode': True,
+    'charset': 'utf8mb4'
 }
 
 def get_db_connection():
