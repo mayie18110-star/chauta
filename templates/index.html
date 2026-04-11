@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Supermercado Chauta</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body class="auth-required">
+    <!-- PANEL DE ACCESO Y REGISTRO -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <div id="setup-panel" style="display: none;">
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 20px;">Registro de Supermercado
+                </h1>
+                <p style="margin-bottom: 30px; color: #666;">Bienvenido a MercAPP. Comencemos configurando tu tienda.
+                </p>
+                <form id="setup-form" class="auth-form">
+                    <!-- Form fields same as before -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre del Supermercado</label>
+                            <input type="text" id="reg-nombre" placeholder="Ej: Supermercado Chauta" required>
+                        </div>
+                        <div class="form-group">
+                            <label>NIT / RUT</label>
+                            <input type="text" id="reg-nit" placeholder="Ej: 123.456.789-0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Dueño / Encargado</label>
+                            <input type="text" id="reg-dueno" placeholder="Nombre completo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Lugar / Ciudad</label>
+                            <input type="text" id="reg-lugar" placeholder="Ej: Madrid, Cundinamarca" required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Dirección</label>
+                            <input type="text" id="reg-direccion" placeholder="Ej: Calle 123 #45-67" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad de Cajeros</label>
+                            <input type="number" id="reg-cajeros" value="1" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña (6-18 caracteres)</label>
+                            <input type="password" id="reg-password" minlength="6" maxlength="18" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-auth-primary">Finalizar Registro</button>
+                    <p style="margin-top: 20px; text-align: center;">¿Ya tienes registro? <a href="#"
+                            onclick="toggleAuth('login')">Inicia Sesión</a></p>
+                </form>
+            </div>
+
+            <!-- PANEL DE SELECCIÓN DE ROL -->
+            <div id="role-selection-panel" style="display: none; text-align: center;">
+                <h1 style="color: var(--color-primary); font-size: 36px; margin-bottom: 20px;">¡Bienvenido!</h1>
+                <p style="margin-bottom: 30px; font-size: 20px; color: #555;">¿Cómo deseas ingresar al sistema?</p>
+
+                <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
+                    <button onclick="toggleAuth('login-cajero')"
+                        style="flex:1; padding: 25px; font-size:24px; border-radius:15px; border:3px solid #e2e8f0; background:white; cursor:pointer; color:var(--color-primary); font-weight:800; transition:all 0.2s;">
+                        <span style="font-size:40px; display:block; margin-bottom:10px;">👩‍💼</span>
+                        CAJERA
+                    </button>
+                    <button onclick="toggleAuth('login-admin')"
+                        style="flex:1; padding: 25px; font-size:24px; border-radius:15px; border:3px solid #e2e8f0; background:white; cursor:pointer; color:#e53e3e; font-weight:800; transition:all 0.2s;">
+                        <span style="font-size:40px; display:block; margin-bottom:10px;">👔</span>
+                        ADMIN
+                    </button>
+                </div>
+                <p style="margin-top: 20px; text-align: center;">¿Primer ingreso? <a href="#"
+                        onclick="toggleAuth('setup')">Registrar Supermercado</a></p>
+            </div>
+
+            <!-- LOGIN CAJERO -->
+            <div id="login-cajero-panel" style="display: none;">
+                <button onclick="toggleAuth('role')"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Volver a inicio</button>
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Acceso de Caja</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Ingresa los datos del supermercado.</p>
+                <form id="login-cajero-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Nombre del Supermercado</label>
+                        <input type="text" id="login-cajero-nombre" placeholder="Ingresa el nombre registrado" required>
+                    </div>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Contraseña de Caja</label>
+                        <input type="password" id="login-cajero-password" required>
+                    </div>
+                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px;">Abrir Caja</button>
+                </form>
+            </div>
+
+            <!-- LOGIN ADMIN -->
+            <div id="login-admin-panel" style="display: none;">
+                <button onclick="toggleAuth('role')"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Volver a inicio</button>
+                <h1 style="color: #e53e3e; font-size: 32px; margin-bottom: 10px;">Acceso Administrativo</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Gestión integral del sistema.</p>
+                <form id="login-admin-form" class="auth-form">
+                    <div class="form-group">
+                        <label>Usuario Administrativo</label>
+                        <input type="text" id="login-admin-user" placeholder="Ej: admin" required>
+                    </div>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Contraseña de Administrador</label>
+                        <input type="password" id="login-admin-password" required>
+                    </div>
+                    <button type="submit" class="btn-auth-primary"
+                        style="margin-top: 30px; background-color:#e53e3e;">Entrar al Panel</button>
+                </form>
+            </div>
+
+            <div id="cajero-selection-panel" style="display: none; text-align: center;">
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Selección de Caja</h1>
+                <p style="margin-bottom: 30px; color: #666;">¿En qué caja trabajarás hoy?</p>
+                <div id="cajeros-grid"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; justify-content: center;">
+                    <!-- Botones de cajeros se inyectan aquí -->
+                </div>
+                <button onclick="manejarVolverSeleccion()"
+                    style="margin-top: 40px; background: none; border: none; color: #666; cursor: pointer; text-decoration: underline;">⬅️
+                    Volver</button>
+            </div>
+
+            <!-- APERTURA DE CAJA (INGRESO DE BASE) -->
+            <div id="apertura-caja-panel" style="display: none; text-align: center;">
+                <button
+                    onclick="document.getElementById('apertura-caja-panel').style.display='none'; document.getElementById('cajero-selection-panel').style.display='block';"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Escoger otra caja</button>
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Apertura de Caja <span
+                        id="lbl-caja-nro"></span></h1>
+                <p style="margin-bottom: 20px; color: #666;">¿Con cuánta base (dinero) inicia el turno de hoy?</p>
+                <form id="apertura-form" class="auth-form" style="max-width: 400px; margin: 0 auto;">
+                    <div class="form-group">
+                        <label>Base Inicial ($)</label>
+                        <input type="number" id="base-inicial-input" placeholder="Ej: 50000" min="0" required
+                            style="font-size: 24px; text-align: center;">
+                    </div>
+                    <button type="submit" class="btn-auth-primary"
+                        style="margin-top: 30px; background-color: var(--color-success);">Comenzar Turno</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <header class="app-header">
+        <div class="logo-area">
+            <h1>🛒 SUPERMERCADO CHAUTA - CAJA 01</h1>
+        </div>
+        <div class="header-info">
+            <span id="current-time">12:00</span>
+            <button id="btn-historial-ventas" class="btn-logout-header" title="Historial de Ventas">📊 Historial</button>
+            <button id="btn-consultar-fiado" class="btn-logout-header" title="Consultar Fiados">📋 Consultar Fiado</button>
+            <button id="btn-logout" class="btn-logout-header" title="Cerrar Sesión">Cerrar Sesión 🚪</button>
+        </div>
+    </header>
+
+    <main class="pos-container">
+        <!-- Izquierda: Menú de Categorías Rapidas -->
+        <aside class="sidebar-menu">
+            <!-- VISTA 1: CATEGORÍAS -->
+            <div id="v-categorias" class="sidebar-view">
+
+                <!-- SECCIÓN: MÁS VENDIDOS -->
+                <div id="mas-vendidos-section">
+                    <h2 class="sidebar-title">🔥 MÁS VENDIDOS</h2>
+                    <div id="mas-vendidos-grid" class="mas-vendidos-grid">
+                        <!-- Se llena dinámicamente -->
+                        <div class="mv-skeleton"></div>
+                        <div class="mv-skeleton"></div>
+                        <div class="mv-skeleton"></div>
+                        <div class="mv-skeleton"></div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: BUSCAR CATEGORÍA -->
+                <div class="sidebar-divider"></div>
+                <h2 class="sidebar-title">🔍 BUSCAR CATEGORÍA</h2>
+                <input type="text" id="cat-search-input" class="sidebar-search" placeholder="Escribe para filtrar...">
+                <div id="categories-list" class="category-vertical-list">
+                    <!-- Se llena dinámicamente -->
+                </div>
+            </div>
+
+            <!-- VISTA 2: PRODUCTOS DE CATEGORÍA -->
+            <div id="v-productos" class="sidebar-view" style="display: none;">
+                <button id="btn-volver-cat" class="sidebar-back-btn">⬅️ VOLVER</button>
+                <h2 id="cat-selected-title" class="sidebar-title">PRODUCTOS</h2>
+                <div id="products-by-cat-grid" class="products-grid-list">
+                    <!-- Se llena al elegir categoría -->
+                </div>
+            </div>
+
+
+            <div class="sidebar-actions">
+                <button id="btn-cambiar-caja" class="action-btn"
+                    style="background: #ffffff; border: 3px solid #cbd5e0; color: #c53030;">
+                    <span class="icon">🔒</span>
+                    <span class="label">Cerrar Caja</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Centro: Carrito y Búsqueda -->
+        <section class="main-cart">
+            <div class="search-area">
+                <h2>Venta Actual</h2>
+                <div class="search-box">
+                    <input type="text" id="barcode-input" placeholder="🔍 Escanear código o buscar por nombre..."
+                        autocomplete="off" autofocus>
+
+                    <!-- Contenedor para múltiples resultados (OCULTO POR DEFECTO) -->
+                    <div id="search-results-overlay" class="search-results-panel" style="display: none;">
+                        <div class="results-header">
+                            <span>Varios productos encontrados. Toca uno:</span>
+                            <button id="close-results" class="btn-close-sm">✕</button>
+                        </div>
+                        <div id="results-list" class="results-grid">
+                            <!-- Se llena por JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cart-header">
+                <h3>Lista de Productos</h3>
+            </div>
+
+            <div class="cart-items" id="cart-items-container">
+                <!-- Los items se inyectarán aquí vía JS -->
+                <div class="empty-cart-msg">
+                    <p>Esperando productos...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Derecha: Totales y Pagos -->
+        <aside class="payment-panel">
+            <div class="total-display">
+                <h2>Total</h2>
+                <div class="grand-total" id="grand-total">$0.00</div>
+                <div class="sub-totals">
+                    <div class="sub-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal-val">$0.00</span>
+                    </div>
+                    <div class="sub-row">
+                        <span>Impuestos:</span>
+                        <span id="taxes-val">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-actions">
+                <button class="pay-btn btn-primary" id="btn-cobrar" style="height: 100px; font-size: 32px;">
+                    💰 COBRAR
+                </button>
+                <button class="pay-btn btn-secondary" id="btn-fiado" style="height: 100px; font-size: 32px;">
+                    📝 FIADO
+                </button>
+                <button class="pay-btn btn-danger" id="btn-anular-venta">
+                    ⛔ Anular Venta
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <!-- MODAL DE CIERRE DE CAJA -->
+    <div id="modal-cierre-caja" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 style="font-size: 30px;">Arqueo y Cierre de Caja</h2>
+                <button id="btn-cerrar-modal-cierre"
+                    style="background: none; border: none; font-size: 30px; cursor: pointer;">✕</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="display:block; color: #718096; font-size: 14px;">Efectivo Teórico</span>
+                        <strong id="cierre-efe-teorico" style="font-size: 20px; color: #2d3748;">$0</strong>
+                        <small style="display:block; color: #a0aec0; font-size: 11px;">(Base + Vtas Efectivo)</small>
+                    </div>
+                    <div style="background: #f7fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <span style="display:block; color: #718096; font-size: 14px;">Transferencias</span>
+                        <strong id="cierre-transfe" style="font-size: 20px; color: #2d3748;">$0</strong>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-size: 20px; font-weight: 700;">💸 Efectivo Físico Contado:</label>
+                    <input type="number" id="efectivo-contado-input" placeholder="Ingresa el dinero físico..."
+                        style="font-size: 26px; padding: 15px; border: 3px solid var(--color-primary); width: 100%; border-radius: 10px; margin-top: 10px;">
+                </div>
+
+                <div id="cierre-diff-container"
+                    style="text-align: center; padding: 15px; border-radius: 10px; background: #edf2f7; display: none;">
+                    <span id="cierre-diff-label" style="font-weight: 700; font-size: 22px;">DIFERENCIA: $0</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="final-btn btn-finish" id="btn-finalizar-cierre"
+                    style="width: 100%; height: 60px; font-size: 20px;">Confirmar Arqueo y Cerrar Caja</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE PAGO -->
+    <div id="modal-pago" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-size: 30px;">Finalizar Venta</h2>
+                <button id="btn-cerrar-modal"
+                    style="background: none; border: none; font-size: 30px; cursor: pointer;">✕</button>
+            </div>
+
+            <div class="payment-methods">
+                <button class="pm-btn active" id="btn-pm-efectivo">💵 Efectivo</button>
+                <button class="pm-btn" id="btn-pm-transfer">📱 Transferencia</button>
+            </div>
+
+            <!-- Sección Efectivo -->
+            <div id="sec-efectivo" class="pay-section active">
+                <div class="efectivo-input-group">
+                    <label style="font-size: 20px; font-weight: 700; display: block; margin-bottom: 10px;">¿Con cuánto
+                        paga el cliente?</label>
+                    <input type="number" id="pago-recibido" placeholder="0" min="0">
+                    <div class="cambio-display">
+                        Cambio: <span id="cambio-val">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección Transferencia -->
+            <div id="sec-transferencia" class="pay-section">
+                <div class="qr-container">
+                    <p style="font-size: 20px; font-weight: 700; margin-bottom: 15px;">Escanee para pagar:</p>
+                    <img id="qr-img" src="" alt="Código QR de Pago"
+                        style="width: 250px; height: 250px; border: 4px solid #eee; border-radius: 12px;">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="final-btn btn-finish" id="btn-finalizar-solo">✅ Finalizar</button>
+                <button class="final-btn btn-print" id="btn-finalizar-factura">🖨️ Factura</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE FIADO -->
+    <div id="modal-fiado" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-size: 30px;">Venta a Fiado</h2>
+                <button id="btn-cerrar-modal-fiado" style="background: none; border: none; font-size: 30px; cursor: pointer;">✕</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-size: 20px; font-weight: 700;">Nombre del Cliente:</label>
+                    <input type="text" id="cliente-fiado-nombre" placeholder="Ej: Juan Pérez" style="font-size: 24px; padding: 15px; width: 100%; border-radius: 10px; border: 3px solid var(--color-primary);">
+                </div>
+                <div style="text-align: center; font-size: 24px; margin-bottom: 20px;">
+                    Total a Fiar: <span id="total-fiado-modal">$0</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="final-btn btn-finish" id="btn-confirmar-fiado" style="width: 100%; height: 60px; font-size: 24px;">✅ CONFIRMAR FIADO</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONSULTAR FIADO -->
+    <div id="modal-consultar-fiado" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 style="font-size: 30px;">Consultar y Pagar Fiado</h2>
+                <button id="btn-cerrar-consultar-fiado" style="background: none; border: none; font-size: 30px; cursor: pointer;">✕</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-size: 20px; font-weight: 700;">Buscar Cliente:</label>
+                    <input type="text" id="buscar-cliente-fiado" placeholder="Ingresa nombre del cliente" style="font-size: 20px; padding: 10px; width: 100%; border-radius: 8px; border: 2px solid #ccc;">
+                    <button id="btn-buscar-fiado" style="margin-top: 10px; padding: 10px 20px; font-size: 18px;">Buscar</button>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 20px; margin-bottom: 12px;">Clientes con fiado</h3>
+                    <div id="clientes-fiados-list" style="max-height: 250px; overflow-y: auto; border: 2px solid #e2e8f0; border-radius: 14px; padding: 12px; background: #f7fafc;">
+                        <p style="color: #718096; margin: 0;">Cargando clientes...</p>
+                    </div>
+                </div>
+                <div id="info-cliente-fiado" style="display: none;">
+                    <h3 id="nombre-cliente-fiado" style="font-size: 24px;"></h3>
+                    <p>Deuda Total: <span id="deuda-cliente-fiado" style="font-size: 20px; font-weight: bold;"></span></p>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label style="font-size: 18px;">Monto a Pagar:</label>
+                        <input type="number" id="monto-pagar-fiado" placeholder="0" min="0" style="font-size: 20px; padding: 10px; width: 100%;">
+                    </div>
+                    <button id="btn-pagar-fiado" style="margin-top: 20px; padding: 15px; font-size: 20px; width: 100%;">💰 PAGAR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HISTORIAL DE VENTAS -->
+    <div id="modal-historial-ventas" class="modal-overlay">
+        <div class="modal-content historial-modal" style="max-width: 1100px; width: 95%;">
+            <div class="modal-header">
+                <button id="btn-back-historial-ventas" class="btn-back" title="Volver a venta">← Volver</button>
+                <h2 style="font-size: 30px; margin: 0 20px; flex: 1; text-align: center;">Historial de Ventas - Caja</h2>
+                <button id="btn-cerrar-historial-ventas" style="background: none; border: none; font-size: 30px; cursor: pointer;">✕</button>
+            </div>
+            <div style="padding: 20px; display: grid; grid-template-columns: 1.3fr 0.9fr; gap: 20px;">
+                <div class="modal-table-wrapper" style="background: #f7fafc; border-radius: 18px; border: 1px solid #e2e8f0; padding: 18px;">
+                    <table class="modal-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>Folio</th>
+                                <th>Fecha</th>
+                                <th style="text-align: right;">Total</th>
+                                <th>Pago</th>
+                                <th style="text-align: center;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-historial-ventas">
+                            <tr><td colspan="5" style="padding: 20px; text-align: center; color: #718096;">Cargando ventas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <aside id="venta-historial-detalle-panel" style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 24px; min-height: 420px;">
+                    <div id="venta-historial-detalle-empty" style="text-align: center; color: #718096; padding: 40px 20px;">
+                        <h3 style="font-size: 24px; margin-bottom: 12px; color: #2d3748;">Selecciona una venta</h3>
+                        <p style="font-size: 16px; line-height: 1.6;">Aquí verás el detalle de los productos y el resumen de la venta.</p>
+                    </div>
+                    <div id="venta-historial-detalle-content" style="display: none;">
+                        <h3 id="venta-historial-detalle-titulo" style="font-size: 26px; margin-bottom: 8px; color: #2b6cb0;"></h3>
+                        <p id="venta-historial-detalle-meta" style="font-size: 16px; margin-bottom: 22px; color: #4a5568;"></p>
+                        <div id="venta-historial-detalle-items" style="display: grid; gap: 12px;"></div>
+                        <div style="margin-top: 24px; padding: 18px; border-radius: 18px; background: #f7fafc; border: 1px solid #e2e8f0;">
+                            <p style="margin: 0 0 10px; font-weight: 700;">Resumen</p>
+                            <p id="venta-historial-subtotal" style="margin: 4px 0;"></p>
+                            <p id="venta-historial-impuestos" style="margin: 4px 0;"></p>
+                            <p id="venta-historial-total" style="margin: 4px 0; font-size: 20px; font-weight: 800;"></p>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <div id="invoice-template" style="display: none;">
+        <div style="width: 280px; padding: 10px; font-family: monospace, 'Courier New', Courier; color: #000; background: #fff; line-height: 1.4; text-align: center;">
+            <h1 id="pdf-super-name" style="font-size: 22px; margin: 0; font-weight: 800; letter-spacing: 0px;">supermercado Chauta</h1>
+            <p style="font-size: 14px; margin: 5px 0 10px 0;">SUPERMERCADO</p>
+            
+            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+            
+            <p style="font-size: 14px; font-weight: bold; margin: 5px 0;">MercAPP S.A.S</p>
+            <p style="font-size: 14px; margin: 2px 0;">No responsable de IVA</p>
+            <p style="font-size: 14px; margin: 2px 0;">vereda chauta</p>
+            <p style="font-size: 14px; margin: 2px 0;">madrid, cundinamarca</p>
+            
+            <div style="border-bottom: 2px solid #000; margin: 10px 0;"></div>
+            
+            <p style="font-size: 15px; font-weight: 700; margin: 5px 0;">FACTURA DE VENTA POS</p>
+            <p style="font-size: 14px; margin: 5px 0;">Rango MRC-0001 a MRC-9999</p>
+            
+            <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            
+            <div style="font-size: 14px; text-align: left; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>FACTURA No:</span>
+                    <span id="pdf-factura-nro" style="font-weight: 700;">MRC-000</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Fecha:</span>
+                    <span id="pdf-fecha">00/00/0000</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Hora:</span>
+                    <span id="pdf-hora">00:00:00</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 2px solid #000; padding: 5px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1px dashed #000;">
+                            <th style="padding: 5px 0;">Artículo / Descripción</th>
+                            <th style="text-align: right; padding: 5px 0;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf-items-list">
+                        <!-- Dinámico -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="border-top: 2px solid #000; padding-top: 10px; font-size: 14px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Artículos vendidos:</span>
+                    <span id="pdf-art-count">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Subtotal:</span>
+                    <span id="pdf-subtotal">$0</span>
+                </div>
+                <p style="font-size: 12px; color: #555; margin: 8px 0;">*** IVA INCLUIDO ***</p>
+                <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 900; margin-top: 15px;">
+                    <span>TOTAL:</span>
+                    <span id="pdf-total">$0</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin-top: 15px; padding-top: 10px; font-size: 14px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Forma de pago:</span>
+                    <span id="pdf-metodo-pago" style="font-weight: 700;">Efectivo</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Efectivo:</span>
+                    <span id="pdf-pago-recibido" style="font-weight: 700;">$0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>Cambio:</span>
+                    <span id="pdf-cambio" style="font-weight: 700;">$0</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 2px solid #000; margin-top: 15px; padding-top: 10px; font-size: 14px; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>ATENDIDO POR:</span>
+                    <span id="pdf-cajero-name" style="font-weight: 700;">Administrador</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 2px solid #000; margin-top: 15px; padding-top: 15px; font-size: 14px; text-align: center;">
+                <p style="font-weight: 700; font-size: 16px; margin-bottom: 10px;">¡Gracias por su compra!</p>
+                <p style="font-size: 14px; margin-top: 5px;">Vuelva pronto a <span id="pdf-footer-name">supermercado Chauta</span></p>
+                <div style="border-top: 1px dashed #000; margin: 15px 0;"></div>
+                <p style="font-size: 12px; margin: 3px 0;">Documento equivalente POS</p>
+                <p style="font-size: 12px; margin: 3px 0;">Art. 616-1 del Estatuto Tributario</p>
+                <p style="font-size: 12px; margin-top: 5px;"><span id="pdf-current-time-footer"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN DEL SISTEMA -->
+    <div id="modal-config" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>⚙️ Configuración del Supermercado</h2>
+                <button class="btn-close" id="btn-close-config"
+                    style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <form id="config-form" class="auth-form">
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Nombre del Supermercado</label>
+                            <input type="text" id="conf-nombre" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group">
+                            <label>NIT / RUT</label>
+                            <input type="text" id="conf-nit" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group">
+                            <label>Dueño / Encargado</label>
+                            <input type="text" id="conf-dueno" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group">
+                            <label>Lugar / Ciudad</label>
+                            <input type="text" id="conf-lugar" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Dirección</label>
+                            <input type="text" id="conf-direccion" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad de Cajeros</label>
+                            <input type="number" id="conf-cajeros" min="1" required
+                                style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="margin-top: 30px; display: flex; gap: 10px;">
+                        <button type="submit" class="btn-auth-primary"
+                            style="flex: 1; padding: 15px; background: var(--color-primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;">Guardar
+                            Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=14"></script>
+</body>
+
+</html>

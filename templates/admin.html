@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Inventario - Supermercado Chauta</title>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+            padding: 20px;
+            flex: 1;
+            height: calc(100vh - 70px);
+        }
+
+        .admin-nav {
+            background: var(--bg-panel);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .admin-nav-btn {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: 700;
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            text-align: left;
+            background: #f7fafc;
+            color: var(--color-text-main);
+            transition: all 0.2s;
+        }
+
+        .admin-nav-btn.active {
+            background: #ebf8ff;
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .admin-content {
+            background: var(--bg-panel);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            box-shadow: var(--shadow-md);
+            overflow-y: auto;
+        }
+
+        .tab-section {
+            display: none;
+        }
+
+        .tab-section.active {
+            display: block;
+        }
+
+        h2.section-title {
+            font-family: var(--font-display);
+            font-size: 32px;
+            margin-bottom: 25px;
+            border-bottom: 3px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            font-size: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        .admin-table th,
+        .admin-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .admin-table th {
+            background: #edf2f7;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .big-sum-btn {
+            background: var(--color-success);
+            color: white;
+            font-size: 22px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="app-header" style="background-color: #2b6cb0;">
+        <div class="logo-area">
+            <h1>⚙️ GESTIÓN DE INVENTARIO</h1>
+        </div>
+        <div class="header-info">
+            <button onclick="window.location.href='/'" class="btn-action" style="font-size:20px; padding: 10px 20px;">
+                ◀ Volver a CAJA
+            </button>
+        </div>
+    </header>
+
+    <main class="admin-layout">
+        <aside class="admin-nav">
+            <button class="admin-nav-btn active" data-target="tab-dashboard">📈 Dashboard / Resumen</button>
+            <button class="admin-nav-btn" data-target="tab-contabilidad">📒 Contabilidad / Cajas</button>
+            <button class="admin-nav-btn" data-target="tab-productos">📦 Productos & Stock</button>
+            <button class="admin-nav-btn" data-target="tab-categorias">🏷️ Categorías</button>
+            <button class="admin-nav-btn" data-target="tab-ventas">📊 Historial de Ventas</button>            <button class="admin-nav-btn" data-target="tab-fiados">💳 Fiados</button>        </aside>
+
+        <section class="admin-content">
+            <!-- TAB DASHBOARD -->
+            <div id="tab-dashboard" class="tab-section active">
+                <h2 class="section-title">Resumen del Día</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; margin-bottom: 40px; max-width: 900px; margin-left: auto; margin-right: auto;">
+                    <div id="card-ventas-hoy" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; text-align: center;">
+                        <h3 style="font-size: 20px; margin-bottom: 10px; opacity: 0.9;">Total Vendido Hoy 🔊</h3>
+                        <p id="dash-total-hoy" style="font-size: 40px; font-weight: 800; margin: 0;">Cargando...</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); color: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center;">
+                        <h3 style="font-size: 20px; margin-bottom: 10px; opacity: 0.9;">Transacciones de Hoy</h3>
+                        <p id="dash-trans-hoy" style="font-size: 40px; font-weight: 800; margin: 0;">...</p>
+                    </div>
+                </div>
+                
+                <div style="background: #edf2f7; padding: 25px; border-radius: var(--radius-md); border-left: 5px solid #3182ce;">
+                    <h3 style="font-size: 24px; margin-bottom: 10px; color: #2d3748;">Bienvenido al Panel Administrativo</h3>
+                    <p style="font-size: 18px; color: #4a5568;">Utiliza el menú lateral para gestionar tus productos, categorías y ver el detalle en el historial de ventas.</p>
+                </div>
+            </div>
+
+            <!-- TAB CONTABILIDAD / CUADRE DE CAJAS (CON VISTA CALENDARIO) -->
+            <div id="tab-contabilidad" class="tab-section">
+                <h2 class="section-title">📅 Contabilidad y Cuadre de Cajas</h2>
+                
+                <div style="display: flex; flex-direction: column; gap: 25px; align-items: stretch;">
+                    
+                    <!-- SECCIÓN CALENDARIO (EXPANDIDA) -->
+                    <div style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <button id="btn-prev-month" style="background:none; border:none; font-size: 32px; cursor:pointer;">⬅️</button>
+                            <h3 id="calendar-month-year" style="font-size: 28px; font-weight: 800; color: var(--color-primary); margin: 0;">Abril 2026</h3>
+                            <button id="btn-next-month" style="background:none; border:none; font-size: 32px; cursor:pointer;">➡️</button>
+                        </div>
+                        
+                        <div id="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center;">
+                            <!-- Encabezados Días -->
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">DOM</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">LUN</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">MAR</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">MIÉ</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">JUE</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">VIE</div>
+                            <div style="font-weight: 800; font-size: 16px; color: #a0aec0;">SÁD</div>
+                            <!-- Días inyectados por JS -->
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN DETALLE DEL DÍA (ABAJO) -->
+                    <div id="day-detail-panel" style="background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; width: 100%;">
+                        <div id="detail-welcome" style="text-align: center; color: #a0aec0; padding: 40px 0;">
+                            <span style="font-size: 60px; display: block; margin-bottom: 20px;">📅</span>
+                            <p style="font-size: 22px; font-weight: 700;">Selecciona un día arriba para ver el detalle de ventas.</p>
+                        </div>
+                        
+                        <div id="detail-content" style="display: none;">
+                            <h3 id="detail-date-title" style="font-size: 24px; font-weight: 800; color: var(--color-primary); margin-bottom: 20px; border-bottom: 3px solid #f7fafc; padding-bottom: 10px;">Ventas del 10 Abril 2026</h3>
+                            
+                            <div id="detail-summary-cards" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
+                                <div style="background: #f0fff4; border: 1px solid #c6f6d5; padding: 15px; border-radius: 8px;">
+                                    <span style="color: #2f855a; font-size: 12px; font-weight: 800;">TOTAL BASE</span>
+                                    <p id="detail-total-base" style="font-size: 22px; font-weight: 800; margin: 0; color: #22543d;">$3,000,000</p>
+                                </div>
+                                <div style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px;">
+                                    <span style="color: #2b6cb0; font-size: 12px; font-weight: 800;">TOTAL VENTAS</span>
+                                    <p id="detail-total-ventas" style="font-size: 22px; font-weight: 800; margin: 0; color: #2a4365;">$540,000</p>
+                                </div>
+                            </div>
+
+                            <div style="overflow-x: auto;">
+                                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr style="background-color: var(--color-primary); color: white; text-align: left;">
+                                            <th style="padding: 12px; font-size: 18px;">Hora Apr.</th>
+                                            <th style="padding: 12px; font-size: 18px;">Caja</th>
+                                            <th style="padding: 12px; font-size: 18px; text-align: right;">Base</th>
+                                            <th style="padding: 12px; font-size: 18px; text-align: right;">Ventas</th>
+                                            <th style="padding: 12px; font-size: 18px; text-align: right;">Arqueo</th>
+                                            <th style="padding: 12px; font-size: 18px; text-align: right;">Diff.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-contabilidad">
+                                        <!-- Inyectado por JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB PRODUCTOS -->
+            <div id="tab-productos" class="tab-section">
+                <h2 class="section-title">Añadir/Modificar Producto</h2>
+                <div
+                    style="background: #f7fafc; padding: 25px; border-radius: var(--radius-md); margin-bottom: 30px; border: 2px solid #e2e8f0;">
+                    <!-- CAMBIO 1: se agregó enctype="multipart/form-data" -->
+                    <form id="form-producto" enctype="multipart/form-data"
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        
+                        <!-- Campo OCULTO para el ID del producto (importante para edición) -->
+                        <input type="hidden" id="prod-id" name="id">
+
+                        <div class="form-group">
+                            <label>Código de Barras *</label>
+                            <input type="text" id="prod-codigo" required placeholder="Ej: 111111">
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre del Producto *</label>
+                            <input type="text" id="prod-nombre" required placeholder="Ej: Jabón Rey">
+                        </div>
+                        <div class="form-group">
+                            <label>Marca *</label>
+                            <input type="text" id="prod-marca" required placeholder="Ej: Dersa">
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Unitario ($) *</label>
+                            <input type="number" step="0.01" id="prod-precio" required placeholder="Ej: 2.50">
+                        </div>
+                        <div class="form-group">
+                            <label>Stock / Cantidad a Añadir</label>
+                            <input type="number" step="0.001" id="prod-stock" value="0" placeholder="Ej: 10.500">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="prod-categoria">
+                                <option value="">Seleccione Categoría</option>
+                            </select>
+                        </div>
+
+                        <!-- CAMBIO 2: reemplazado el input de texto por selector de archivo con vista previa -->
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>📷 Foto del Producto</label>
+                            <input type="file" id="prod-img-file" name="imagen_file" accept="image/*"
+                                style="width: 100%; padding: 12px; font-size: 18px; border: 2px dashed #a0aec0; border-radius: var(--radius-md); cursor: pointer; background: white;">
+                            <!-- Vista previa de la imagen seleccionada -->
+                            <img id="img-preview" src="" alt="Vista previa"
+                                style="display:none; margin-top: 12px; width: 110px; height: 110px; object-fit: cover; border-radius: 10px; border: 3px solid #48bb78;">
+                        </div>
+
+                        <div style="grid-column: span 2; display: flex; gap: 15px;">
+                            <button type="submit" id="btn-submit-producto" class="big-sum-btn" style="flex: 1; font-size: 26px;">➕ Guardar Producto</button>
+                            <button type="button" id="btn-cancelar-edicion" class="big-sum-btn" style="background: #a0aec0; display: none;">✖ Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <h3 style="font-size: 26px; margin-bottom: 15px;">Inventario Actual</h3>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Foto</th>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Categoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-productos">
+                        <!-- Llenado via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TAB CATEGORÍAS -->
+            <div id="tab-categorias" class="tab-section">
+                <h2 class="section-title">Añadir Nueva Categoría</h2>
+                <form id="form-categoria" enctype="multipart/form-data" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: flex-end; margin-bottom: 40px; background: #f7fafc; padding: 20px; border-radius: 12px; border: 2px solid #e2e8f0;">
+                    <input type="hidden" id="cat-id">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Nombre de Categoría</label>
+                        <input type="text" id="cat-nombre" required placeholder="Ej: Aseos">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Imagen / Logo</label>
+                        <input type="file" id="cat-img-file" accept="image/*" style="padding: 10px; font-size: 16px;">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" id="btn-submit-categoria" class="big-sum-btn" style="margin-top: 0;">➕ Crear Categoría</button>
+                        <button type="button" id="btn-cancelar-cat" class="big-sum-btn" style="margin-top: 0; background: #a0aec0; display: none;">✖</button>
+                    </div>
+                </form>
+
+                <h3 style="font-size: 26px; margin-bottom: 15px;">Listado de Categorías</h3>
+                <div id="lista-categorias" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <!-- Llenado via JS -->
+                </div>
+            </div>
+
+            <!-- TAB VENTAS -->
+            <div id="tab-ventas" class="tab-section">
+                <h2 class="section-title">Historial de Ventas (Últimas 50)</h2>
+                <div style="display: grid; grid-template-columns: 1fr 420px; gap: 24px; align-items: start;">
+                    <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05); padding: 20px;">
+                        <table class="admin-table" style="margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="font-size: 20px;">Folio</th>
+                                    <th style="font-size: 20px;">Fecha / Hora</th>
+                                    <th style="font-size: 20px;">Total</th>
+                                    <th style="font-size: 20px;">Método</th>
+                                    <th style="font-size: 20px;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-ventas">
+                                <!-- Llenado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <aside id="venta-detalle-panel" style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05); padding: 26px; min-height: 420px;">
+                        <div id="venta-detalle-empty" style="text-align: center; color: #718096; padding: 60px 20px;">
+                            <h3 style="font-size: 24px; margin-bottom: 12px; color: #2d3748;">Seleccione una venta</h3>
+                            <p style="font-size: 16px; line-height: 1.6;">Aquí verás los productos de la venta seleccionada y su resumen.</p>
+                        </div>
+                        <div id="venta-detalle-content" style="display: none;">
+                            <h3 id="venta-detalle-titulo" style="font-size: 26px; margin-bottom: 8px; color: #2b6cb0;">Venta</h3>
+                            <p id="venta-detalle-meta" style="font-size: 16px; margin-bottom: 24px; color: #4a5568;"></p>
+                            <div id="venta-detalle-items" style="display: grid; gap: 14px;"></div>
+                            <div style="margin-top: 24px; padding: 18px; border-radius: 18px; background: #f7fafc; border: 1px solid #e2e8f0;">
+                                <p style="margin: 0 0 12px; font-weight: 700;">Resumen de la venta</p>
+                                <p id="venta-detalle-subtotal" style="margin: 0; color: #2d3748;"></p>
+                                <p id="venta-detalle-impuestos" style="margin: 0; color: #2d3748;"></p>
+                                <p id="venta-detalle-total" style="margin: 0; font-size: 20px; font-weight: 800; color: #1a365d;"></p>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <!-- TAB FIADOS -->
+            <div id="tab-fiados" class="tab-section">
+                <h2 class="section-title">💳 Gestión de Fiados</h2>
+                <div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px; align-items: start;">
+                    <div style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05); padding: 20px;">
+                        <table class="admin-table" style="margin-bottom: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="font-size: 20px;">Cliente</th>
+                                    <th style="font-size: 20px;">Total Pendiente</th>
+                                    <th style="font-size: 20px;">Fecha</th>
+                                    <th style="font-size: 20px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-fiados">
+                                <!-- Llenado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <aside id="fiado-detalle-panel" style="background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05); padding: 26px; min-height: 420px;">
+                        <div id="fiado-detalle-empty" style="text-align: center; color: #718096; padding: 60px 20px;">
+                            <h3 style="font-size: 24px; margin-bottom: 12px; color: #2d3748;">Seleccione un cliente</h3>
+                            <p style="font-size: 16px; line-height: 1.6;">Aquí verá el detalle del fiado seleccionado, con productos y monto pendiente.</p>
+                        </div>
+                        <div id="fiado-detalle-content" style="display: none;">
+                            <h3 id="fiado-detalle-titulo" style="font-size: 26px; margin-bottom: 8px; color: #2b6cb0;">Cliente</h3>
+                            <p id="fiado-detalle-saldo" style="font-size: 20px; margin-bottom: 22px; font-weight: 700; color: #1a365d;"></p>
+                            <div id="fiado-detalle-items" style="display: grid; gap: 14px;"></div>
+                            <p id="fiado-detalle-meta" style="margin-top: 24px; color: #4a5568; font-size: 16px;"></p>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}?v=8"></script>
+</body>
+
+</html>
