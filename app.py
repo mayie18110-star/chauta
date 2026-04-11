@@ -22,12 +22,12 @@ def allowed_file(filename):
 
 # Configuración de base de datos desde variables de entorno
 db_config = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'port': int(os.getenv('DB_PORT', 3307)),
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'Mariaf18'),
-    'database': os.getenv('DB_NAME', 'base_chauta'),
-    'autocommit': False,
+    'host': os.environ.get('DB_HOST'),
+    'port': int(os.environ.get('DB_PORT', 4000)),
+    'user': os.environ.get('DB_USER'),
+    'password': os.environ.get('DB_PASSWORD'),
+    'database': os.environ.get('DB_NAME'),
+    'autocommit': True,
     'use_unicode': True,
     'charset': 'utf8mb4'
 }
@@ -202,7 +202,10 @@ def initialize_database():
         conn.close()
         print("Base de datos lista.")
 
-initialize_database()
+try:
+    initialize_database()
+except Exception as e:
+    print("Error inicializando base de datos:", e)
 
 @app.route('/')
 def index():
@@ -1149,4 +1152,5 @@ def login():
         conn.close()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
