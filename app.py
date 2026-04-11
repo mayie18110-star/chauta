@@ -29,7 +29,9 @@ db_config = {
     'database': os.environ.get('DB_NAME'),
     'autocommit': True,
     'use_unicode': True,
-    'charset': 'utf8mb4'
+    'charset': 'utf8mb4',
+    'ssl_ca': os.environ.get('DB_SSL_CA'),
+    'ssl_verify_cert': True
 }
 
 def get_db_connection():
