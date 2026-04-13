@@ -1145,10 +1145,20 @@ def setup_tienda():
         if cursor.fetchone():
             return jsonify({'error': f'El usuario administrador "{data["admin_user"]}" ya existe en otro establecimiento'}), 400
         
-        cursor.execute("""
-            INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email']))
+        cursor.execute("SHOW COLUMNS FROM config_tienda LIKE 'nombre_dueno'")
+        has_nombre_dueno = bool(cursor.fetchone())
+
+        if has_nombre_dueno:
+            cursor.execute("""
+                INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email, nombre_dueno)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email'], data['admin_nombre']))
+        else:
+            cursor.execute("""
+                INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email']))
+
         tienda_id = cursor.lastrowid
         conn.commit()
         return jsonify({'success': True, 'tienda_id': tienda_id})
