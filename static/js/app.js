@@ -275,11 +275,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Navegación entre paneles de auth
     window.toggleAuth = (target) => {
-        const panels = ['setup-panel', 'role-selection-panel', 'login-cajero-panel', 'login-admin-panel', 'cajero-selection-panel', 'apertura-caja-panel'];
+        const panels = ['setup-panel', 'role-selection-panel', 'login-cajero-panel', 'login-admin-panel', 'cajero-selection-panel', 'apertura-caja-panel', 'forgot-password-panel', 'verify-code-panel', 'reset-password-panel'];
         panels.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
+
+        // Limpiar formularios cuando se abre el panel de setup
+        if (target === 'setup') {
+            const setupForm = document.getElementById('setup-form');
+            if (setupForm) setupForm.reset();
+        }
 
         const targetEl = document.getElementById(target + '-panel');
         if (targetEl) {
@@ -296,20 +302,71 @@ document.addEventListener('DOMContentLoaded', () => {
         window.toggleAuth('role');
     };
 
+    let currentRol = 'cajero';
+    let codigoRecuperacion = ''; // Variable global para guardar el código
+
+    window.showForgotPassword = (rol) => {
+        currentRol = rol;
+        document.getElementById('forgot-password-panel').style.display = 'block';
+        document.getElementById('login-cajero-panel').style.display = 'none';
+        document.getElementById('login-admin-panel').style.display = 'none';
+        document.getElementById('verify-code-panel').style.display = 'none';
+        document.getElementById('reset-password-panel').style.display = 'none';
+    };
+
+    window.copiarCodigo = () => {
+        const codigo = document.getElementById('codigo-display').innerText;
+        navigator.clipboard.writeText(codigo).then(() => {
+            const btn = event.target;
+            const textOriginal = btn.innerText;
+            btn.innerText = '✓ Copiado';
+            btn.style.background = '#48bb78';
+            btn.style.color = 'white';
+            setTimeout(() => {
+                btn.innerText = textOriginal;
+                btn.style.background = 'white';
+                btn.style.color = '#667eea';
+            }, 2000);
+        });
+    };
+
     document.getElementById('setup-form').onsubmit = async (e) => {
         e.preventDefault();
         const data = {
-            nombre: document.getElementById('reg-nombre').value,
-            nit: document.getElementById('reg-nit').value,
-            dueno: document.getElementById('reg-dueno').value,
-            lugar: document.getElementById('reg-lugar').value,
-            direccion: document.getElementById('reg-direccion').value,
+            nombre: document.getElementById('reg-nombre').value.trim(),
+            nit: document.getElementById('reg-nit').value.trim(),
+            direccion: document.getElementById('reg-direccion').value.trim(),
             cajeros: document.getElementById('reg-cajeros').value,
-            contrasena: document.getElementById('reg-password').value
+            contrasena: document.getElementById('reg-password').value,
+            admin_nombre: document.getElementById('reg-admin-nombre').value.trim(),
+            admin_user: document.getElementById('reg-admin-user').value.trim(),
+            admin_email: document.getElementById('reg-admin-email').value.trim(),
+            admin_password: document.getElementById('reg-admin-password').value
         };
 
+        if (!/^[0-9]+$/.test(data.nit)) {
+            alert("El NIT debe contener solo números.");
+            return;
+        }
+
         if (data.contrasena.length < 6 || data.contrasena.length > 18) {
-            alert("La contraseña debe tener entre 6 y 18 caracteres.");
+            alert("La contraseña del supermercado debe tener entre 6 y 18 caracteres.");
+            return;
+        }
+        if (data.admin_password.length < 6 || data.admin_password.length > 18) {
+            alert("La contraseña del administrador debe tener entre 6 y 18 caracteres.");
+            return;
+        }
+        if (!data.admin_user) {
+            alert("El usuario del administrador es obligatorio.");
+            return;
+        }
+        if (!/^[a-zA-Z0-9_]+$/.test(data.admin_user)) {
+            alert("El usuario del administrador solo puede contener letras, números y guiones bajos.");
+            return;
+        }
+        if (!data.admin_email) {
+            alert("El correo electrónico del administrador es obligatorio.");
             return;
         }
 
@@ -376,6 +433,70 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    document.getElementById('forgot-password-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('forgot-nombre').value.trim();
+        const email = document.getElementById('forgot-email').value.trim();
+        
+        if (!nombre || !email) {
+            alert('Completa todos los campos');
+            return;
+        }
+        
+        const res = await fetch('/api/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre_supermercado: nombre, email, rol: currentRol })
+        });
+        const result = await res.json();
+        if (result.success) {
+            codigoRecuperacion = result.code;
+            document.getElementById('codigo-display').innerText = result.code;
+            document.getElementById('forgot-password-panel').style.display = 'none';
+            document.getElementById('verify-code-panel').style.display = 'block';
+        } else {
+            alert(result.message || 'Error al generar código');
+        }
+    };
+
+    document.getElementById('verify-code-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgot-email').value.trim();
+        const code = document.getElementById('verify-code').value.trim();
+        const res = await fetch('/api/verify-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code })
+        });
+        const result = await res.json();
+        if (result.success) {
+            document.getElementById('verify-code-panel').style.display = 'none';
+            document.getElementById('reset-password-panel').style.display = 'block';
+        } else {
+            alert(result.message || result.error || 'Código incorrecto');
+        }
+    };
+
+    document.getElementById('reset-password-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgot-email').value.trim();
+        const code = document.getElementById('verify-code').value.trim();
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        const res = await fetch('/api/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code, new_password: newPassword, confirm_password: confirmPassword, rol: currentRol })
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('Contraseña actualizada. Puedes iniciar sesión ahora.');
+            window.toggleAuth('role');
+        } else {
+            alert(result.message || result.error || 'Error al cambiar contraseña');
+        }
+    };
+
     function mostrarSeleccionCaja(t) {
         window.toggleAuth('none'); // Esconde todos los auth panels regulares
         const panelCaja = document.getElementById('cajero-selection-panel');
@@ -399,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             btn.innerHTML = `
                 <span style="font-size: 40px;">💼</span>
-                <span style="font-size: 20px; font-weight: 800;">Caja ${i}</span>
+                <span style="font-size: 24px; font-weight: 800;">Caja ${i}</span>
             `;
 
             btn.onclick = () => mostrarAperturaCaja(i);
@@ -411,20 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function mostrarAperturaCaja(nro) {
         cajaSeleccionadaTemporal = nro;
-
-        // REQUISITO: Verificar si ya fue abierta hoy
-        try {
-            const res = await fetch(`/api/caja/verificar-apertura?caja_id=${nro}`);
-            const data = await res.json();
-
-            if (data.abierta) {
-                // Ya fue abierta hoy para esta caja, entramos directo
-                finalizarAccesoCaja(nro);
-                return;
-            }
-        } catch (err) {
-            console.error("Error verificando apertura:", err);
-        }
 
         document.getElementById('cajero-selection-panel').style.display = 'none';
         document.getElementById('apertura-caja-panel').style.display = 'block';

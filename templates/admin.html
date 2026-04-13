@@ -130,7 +130,10 @@
         <div class="logo-area">
             <h1>⚙️ GESTIÓN DE INVENTARIO</h1>
         </div>
-        <div class="header-info">
+        <div class="header-info" style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="abrirModalEditarNegocio()" class="btn-action" style="font-size:20px; padding: 10px 20px; background-color: #e2a76f; color: white; font-weight: 700;">
+                🏪 Editar Negocio
+            </button>
             <button onclick="window.location.href='/'" class="btn-action" style="font-size:20px; padding: 10px 20px;">
                 ◀ Volver a CAJA
             </button>
@@ -413,7 +416,52 @@
         </section>
     </main>
 
-    <script src="{{ url_for('static', filename='js/admin.js') }}?v=8"></script>
+    <!-- MODAL EDITAR NEGOCIO -->
+    <div id="modal-editar-negocio" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; flex-direction: column;">
+        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 600px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="font-size: 28px; font-weight: 800; margin: 0; color: #2b6cb0;">🏪 Editar Negocio</h2>
+                <button onclick="cerrarModalEditarNegocio()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #a0aec0;">
+                    ✕
+                </button>
+            </div>
+            
+            <form id="form-editar-negocio" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="form-group">
+                    <label style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: block;">Nombre del Negocio</label>
+                    <input type="text" id="edit-nombre-negocio" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: block;">NIT / RUT</label>
+                    <input type="text" id="edit-nit" required pattern="\d*" inputmode="numeric" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                    <small style="color: #718096; font-size: 14px;">Solo números</small>
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: block;">Cantidad de Cajeros</label>
+                    <input type="number" id="edit-cajeros" min="1" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                </div>
+
+                <div class="form-group">
+                    <label style="font-size: 18px; font-weight: 700; margin-bottom: 8px; display: block;">Contraseña Cajeros (mín. 6 caracteres)</label>
+                    <input type="password" id="edit-password-cajero" minlength="6" maxlength="18" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px;">
+                    <small style="color: #718096; font-size: 14px;">Dejar vacío para no cambiar. Entre 6 y 18 caracteres.</small>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="big-sum-btn" style="flex: 1; background: #48bb78; font-size: 18px; padding: 15px;">
+                        ✓ Guardar Cambios
+                    </button>
+                    <button type="button" onclick="cerrarModalEditarNegocio()" style="flex: 1; background: #cbd5e0; color: #2d3748; font-size: 18px; padding: 15px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin.js') }}?v=9"></script>
 </body>
 
 </html>

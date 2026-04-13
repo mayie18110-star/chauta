@@ -12,11 +12,11 @@ load_dotenv()
 
 def initialize_database():
     db_config = {
-        'host': os.getenv('DB_HOST'),
-        'port': int(os.getenv('DB_PORT', 4000)),
-        'user': os.getenv('DB_USER'),
-        'password': os.getenv('DB_PASSWORD'),
-        'database': os.getenv('DB_NAME')
+        'host': os.getenv('DB_HOST', '127.0.0.1'),
+        'port': int(os.getenv('DB_PORT', 3307)),
+        'user': os.getenv('DB_USER', 'root'),
+        'password': os.getenv('DB_PASSWORD', ''),
+        'database': os.getenv('DB_NAME', 'base_chauta')
     }
     
     try:
@@ -84,12 +84,14 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS config_tienda (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nombre_supermercado VARCHAR(100) NOT NULL,
-                nombre_dueno VARCHAR(100) NOT NULL,
-                lugar VARCHAR(100),
                 direccion VARCHAR(255),
                 nit VARCHAR(50),
                 contrasena VARCHAR(255) NOT NULL,
-                num_cajeros INT DEFAULT 1
+                num_cajeros INT DEFAULT 1,
+                correo VARCHAR(100),
+                admin_nombre VARCHAR(100),
+                admin_user VARCHAR(100) NOT NULL,
+                admin_password VARCHAR(255) NOT NULL
             )
         ''')
         print("✓ Tabla 'config_tienda' creada/verificada")

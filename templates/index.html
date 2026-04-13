@@ -16,46 +16,62 @@
     <!-- PANEL DE ACCESO Y REGISTRO -->
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-card">
-            <div id="setup-panel" style="display: none;">
+            <div id="setup-panel" style="display: none; max-height: 90vh; overflow-y: auto; padding-right: 15px;">
+                <button onclick="toggleAuth('role')" style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️ Volver atrás</button>
                 <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 20px;">Registro de Supermercado
                 </h1>
-                <p style="margin-bottom: 30px; color: #666;">Bienvenido a MercAPP. Comencemos configurando tu tienda.
+                <p style="margin-bottom: 30px; color: #666; font-size: 18px;">Bienvenido a MercAPP. Comencemos configurando tu tienda.
                 </p>
                 <form id="setup-form" class="auth-form">
                     <!-- Form fields same as before -->
-                    <div class="form-grid">
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- DATOS DEL NEGOCIO -->
+                        <h3 style="grid-column: span 2; color:#333; margin-top:0; margin-bottom:15px; font-size:22px;">Información del Negocio</h3>
                         <div class="form-group">
-                            <label>Nombre del Supermercado</label>
-                            <input type="text" id="reg-nombre" placeholder="Ej: Supermercado Chauta" required>
+                            <label style="font-size:18px; font-weight:600;">Nombre del Supermercado</label>
+                            <input type="text" id="reg-nombre" style="font-size:18px; padding:12px;" required>
                         </div>
                         <div class="form-group">
-                            <label>NIT / RUT</label>
-                            <input type="text" id="reg-nit" placeholder="Ej: 123.456.789-0" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Dueño / Encargado</label>
-                            <input type="text" id="reg-dueno" placeholder="Nombre completo" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Lugar / Ciudad</label>
-                            <input type="text" id="reg-lugar" placeholder="Ej: Madrid, Cundinamarca" required>
+                            <label style="font-size:18px; font-weight:600;">NIT / RUT</label>
+                            <input type="text" id="reg-nit" inputmode="numeric" pattern="\d*" maxlength="20" style="font-size:18px; padding:12px;" required>
+                            <small style="color:#666; font-size:16px;">Solo números</small>
                         </div>
                         <div class="form-group" style="grid-column: span 2;">
-                            <label>Dirección</label>
-                            <input type="text" id="reg-direccion" placeholder="Ej: Calle 123 #45-67" required>
+                            <label style="font-size:18px; font-weight:600;">Dirección del Establecimiento</label>
+                            <input type="text" id="reg-direccion" style="font-size:18px; padding:12px;" required>
                         </div>
                         <div class="form-group">
-                            <label>Cantidad de Cajeros</label>
-                            <input type="number" id="reg-cajeros" value="1" min="1" required>
+                            <label style="font-size:18px; font-weight:600;">Cantidad de Cajeros</label>
+                            <input type="number" id="reg-cajeros" min="1" style="font-size:18px; padding:12px;" required>
                         </div>
                         <div class="form-group">
-                            <label>Contraseña (6-18 caracteres)</label>
-                            <input type="password" id="reg-password" minlength="6" maxlength="18" required>
+                            <label style="font-size:18px; font-weight:600;">Contraseña del Supermercado (6-18 caracteres)</label>
+                            <input type="password" id="reg-password" minlength="6" maxlength="18" style="font-size:18px; padding:12px;" autocomplete="off" required>
+                            <small style="color:#666; font-size:16px;">La usarán los cajeros para abrir caja</small>
+                        </div>
+
+                        <!-- DATOS DEL ADMINISTRADOR -->
+                        <h3 style="grid-column: span 2; color:#333; margin-top:25px; margin-bottom:15px; font-size:22px;">Información del Administrador</h3>
+                        <div class="form-group">
+                            <label style="font-size:18px; font-weight:600;">Nombre Completo del Administrador</label>
+                            <input type="text" id="reg-admin-nombre" style="font-size:18px; padding:12px;" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:18px; font-weight:600;">Usuario del Administrador</label>
+                            <input type="text" id="reg-admin-user" style="font-size:18px; padding:12px;" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:18px; font-weight:600;">Correo Electrónico del Administrador</label>
+                            <input type="email" id="reg-admin-email" style="font-size:18px; padding:12px;" required>
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label style="font-size:18px; font-weight:600;">Contraseña del Administrador (6-18 caracteres)</label>
+                            <input type="password" id="reg-admin-password" minlength="6" maxlength="18" style="font-size:18px; padding:12px;" autocomplete="off" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn-auth-primary">Finalizar Registro</button>
-                    <p style="margin-top: 20px; text-align: center;">¿Ya tienes registro? <a href="#"
-                            onclick="toggleAuth('login')">Inicia Sesión</a></p>
+                    <button type="submit" class="btn-auth-primary" style="font-size:20px; padding:16px; margin-top:20px;">Finalizar Registro</button>
+                    <p style="margin-top: 20px; text-align: center; font-size:18px;">¿Ya tienes registro? <a href="#"
+                            onclick="toggleAuth('login')" style="font-size:18px;">Inicia Sesión</a></p>
                 </form>
             </div>
 
@@ -76,8 +92,8 @@
                         ADMIN
                     </button>
                 </div>
-                <p style="margin-top: 20px; text-align: center;">¿Primer ingreso? <a href="#"
-                        onclick="toggleAuth('setup')">Registrar Supermercado</a></p>
+                <p style="margin-top: 20px; text-align: center; font-size:18px;">¿Primer ingreso? <a href="#"
+                        onclick="toggleAuth('setup')" style="font-size:18px;">Registrar Supermercado</a></p>
             </div>
 
             <!-- LOGIN CAJERO -->
@@ -89,14 +105,14 @@
                 <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Ingresa los datos del supermercado.</p>
                 <form id="login-cajero-form" class="auth-form">
                     <div class="form-group">
-                        <label>Nombre del Supermercado</label>
-                        <input type="text" id="login-cajero-nombre" placeholder="Ingresa el nombre registrado" required>
+                        <label style="font-size:18px; font-weight:600;">Nombre del Supermercado</label>
+                        <input type="text" id="login-cajero-nombre" style="font-size:18px; padding:12px;" required>
                     </div>
                     <div class="form-group" style="margin-top: 20px;">
-                        <label>Contraseña de Caja</label>
-                        <input type="password" id="login-cajero-password" required>
+                        <label style="font-size:18px; font-weight:600;">Contraseña de Caja</label>
+                        <input type="password" id="login-cajero-password" style="font-size:18px; padding:12px;" autocomplete="off" required>
                     </div>
-                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px;">Abrir Caja</button>
+                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px; font-size:20px; padding:16px;">Abrir Caja</button>
                 </form>
             </div>
 
@@ -109,27 +125,99 @@
                 <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Gestión integral del sistema.</p>
                 <form id="login-admin-form" class="auth-form">
                     <div class="form-group">
-                        <label>Usuario Administrativo</label>
-                        <input type="text" id="login-admin-user" placeholder="Ej: admin" required>
+                        <label style="font-size:18px; font-weight:600;">Usuario Administrativo</label>
+                        <input type="text" id="login-admin-user" style="font-size:18px; padding:12px;" required>
                     </div>
                     <div class="form-group" style="margin-top: 20px;">
-                        <label>Contraseña de Administrador</label>
-                        <input type="password" id="login-admin-password" required>
+                        <label style="font-size:18px; font-weight:600;">Contraseña de Administrador</label>
+                        <input type="password" id="login-admin-password" style="font-size:18px; padding:12px;" autocomplete="off" required>
                     </div>
                     <button type="submit" class="btn-auth-primary"
-                        style="margin-top: 30px; background-color:#e53e3e;">Entrar al Panel</button>
+                        style="margin-top: 30px; background-color:#e53e3e; font-size:20px; padding:16px;">Entrar al Panel</button>
+                    <p style="margin-top: 20px; text-align: center;"><a href="#" onclick="showForgotPassword('admin')" style="color: #666; text-decoration: underline;">¿Olvidó su contraseña?</a></p>
+                </form>
+            </div>
+
+            <!-- FORGOT PASSWORD PANEL -->
+            <div id="forgot-password-panel" style="display: none;">
+                <button onclick="toggleAuth('role')"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Volver a inicio</button>
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Recuperar Contraseña</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Ingresa el nombre de tu supermercado y correo registrado para generar un código.</p>
+                <form id="forgot-password-form" class="auth-form">
+                    <div class="form-group">
+                        <label style="font-size:18px; font-weight:600;">Nombre del Supermercado</label>
+                        <input type="text" id="forgot-nombre" style="font-size:18px; padding:12px;" required>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:18px; font-weight:600;">Correo Electrónico</label>
+                        <input type="email" id="forgot-email" style="font-size:18px; padding:12px;" required>
+                    </div>
+                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px; font-size:20px; padding:16px;">Generar Código</button>
+                </form>
+            </div>
+
+            <!-- VERIFY CODE PANEL -->
+            <div id="verify-code-panel" style="display: none;">
+                <button onclick="showForgotPassword(currentRol)"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Volver</button>
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Código Generado</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Tu código de 4 dígitos ya fue generado. Cópialo e ingésalo a continuación.</p>
+                
+                <!-- PANEL DE CÓDIGO -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                    <p style="color: #e0e7ff; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Tu Código</p>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 10px; flex: 1;">
+                            <span id="codigo-display" style="color: white; font-size: 36px; font-weight: 800; letter-spacing: 5px; font-family: monospace;">0000</span>
+                        </div>
+                        <button type="button" onclick="copiarCodigo()" style="background: white; color: #667eea; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.2s;">
+                            📋 Copiar
+                        </button>
+                    </div>
+                </div>
+                
+                <p style="margin-bottom: 15px; font-size: 16px; color: #718096; text-align: center;">Pega el código en el campo de abajo</p>
+                <form id="verify-code-form" class="auth-form">
+                    <div class="form-group">
+                        <label style="font-size:18px; font-weight:600;">Ingresa el Código</label>
+                        <input type="text" id="verify-code" maxlength="4" pattern="\d{4}" style="font-size:18px; padding:12px; text-align: center;" required>
+                    </div>
+                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px; font-size:20px; padding:16px;">Verificar Código</button>
+                </form>
+            </div>
+
+            <!-- RESET PASSWORD PANEL -->
+            <div id="reset-password-panel" style="display: none;">
+                <button onclick="document.getElementById('reset-password-panel').style.display='none'; document.getElementById('verify-code-panel').style.display='block';"
+                    style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
+                    Volver</button>
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Nueva Contraseña</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Ingresa tu nueva contraseña.</p>
+                <form id="reset-password-form" class="auth-form">
+                    <div class="form-group">
+                        <label style="font-size:18px; font-weight:600;">Nueva Contraseña (6-18 caracteres)</label>
+                        <input type="password" id="new-password" minlength="6" maxlength="18" style="font-size:18px; padding:12px;" required>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:18px; font-weight:600;">Confirmar Contraseña</label>
+                        <input type="password" id="confirm-password" minlength="6" maxlength="18" style="font-size:18px; padding:12px;" required>
+                    </div>
+                    <button type="submit" class="btn-auth-primary" style="margin-top: 30px; font-size:20px; padding:16px;">Cambiar Contraseña</button>
                 </form>
             </div>
 
             <div id="cajero-selection-panel" style="display: none; text-align: center;">
                 <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Selección de Caja</h1>
-                <p style="margin-bottom: 30px; color: #666;">¿En qué caja trabajarás hoy?</p>
+                <p style="margin-bottom: 30px; color: #666; font-size:18px;">¿En qué caja trabajarás hoy?</p>
                 <div id="cajeros-grid"
                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px; justify-content: center;">
                     <!-- Botones de cajeros se inyectan aquí -->
                 </div>
                 <button onclick="manejarVolverSeleccion()"
-                    style="margin-top: 40px; background: none; border: none; color: #666; cursor: pointer; text-decoration: underline;">⬅️
+                    style="margin-top: 40px; background: none; border: none; color: #666; cursor: pointer; text-decoration: underline; font-size:16px;">⬅️
                     Volver</button>
             </div>
 
@@ -141,15 +229,15 @@
                     Escoger otra caja</button>
                 <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Apertura de Caja <span
                         id="lbl-caja-nro"></span></h1>
-                <p style="margin-bottom: 20px; color: #666;">¿Con cuánta base (dinero) inicia el turno de hoy?</p>
+                <p style="margin-bottom: 20px; color: #666; font-size:18px;">¿Con cuánta base (dinero) inicia el turno de hoy?</p>
                 <form id="apertura-form" class="auth-form" style="max-width: 400px; margin: 0 auto;">
                     <div class="form-group">
-                        <label>Base Inicial ($)</label>
-                        <input type="number" id="base-inicial-input" placeholder="Ej: 50000" min="0" required
-                            style="font-size: 24px; text-align: center;">
+                        <label style="font-size:18px; font-weight:600;">Base Inicial ($)</label>
+                        <input type="number" id="base-inicial-input" min="0" required
+                            style="font-size: 24px; padding:14px; text-align: center;">
                     </div>
                     <button type="submit" class="btn-auth-primary"
-                        style="margin-top: 30px; background-color: var(--color-success);">Comenzar Turno</button>
+                        style="margin-top: 30px; background-color: var(--color-success); font-size:20px; padding:16px;">Comenzar Turno</button>
                 </form>
             </div>
         </div>

@@ -6,6 +6,8 @@ from decimal import Decimal
 import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from flask_mail import Mail, Message
+import random
 
 # Cargar variables de entorno
 load_dotenv()
@@ -17,22 +19,38 @@ UPLOAD_FOLDER = os.path.join('static', 'img')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Configuración de Flask-Mail
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER') or app.config['MAIL_USERNAME']
+app.config['MAIL_TEST_MODE'] = os.environ.get('MAIL_TEST_MODE', 'True').lower() == 'true'
+
+mail = Mail(app)
+
+# Diccionario para almacenar códigos de recuperación temporales
+recovery_codes = {}
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Configuración de base de datos desde variables de entorno
+DB_SSL_CA = os.environ.get('DB_SSL_CA')
 db_config = {
-    'host': os.environ.get('DB_HOST'),
-    'port': int(os.environ.get('DB_PORT', 4000)),
-    'user': os.environ.get('DB_USER'),
-    'password': os.environ.get('DB_PASSWORD'),
-    'database': os.environ.get('DB_NAME'),
+    'host': os.environ.get('DB_HOST', '127.0.0.1'),
+    'port': int(os.environ.get('DB_PORT', 3307)),
+    'user': os.environ.get('DB_USER', 'root'),
+    'password': os.environ.get('DB_PASSWORD', ''),
+    'database': os.environ.get('DB_NAME', 'base_chauta'),
     'autocommit': True,
     'use_unicode': True,
-    'charset': 'utf8mb4',
-    'ssl_ca': os.environ.get('DB_SSL_CA'),
-    'ssl_verify_cert': True
+    'charset': 'utf8mb4'
 }
+if DB_SSL_CA:
+    db_config['ssl_ca'] = DB_SSL_CA
+    db_config['ssl_verify_cert'] = True
 
 def get_db_connection():
     try:
@@ -40,6 +58,7 @@ def get_db_connection():
         return connection
     except Error as e:
         print(f"Error connecting to MySQL: {e}")
+        print('DB config used:', db_config)
         return None
 
 def initialize_database():
@@ -98,14 +117,32 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS config_tienda (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nombre_supermercado VARCHAR(100) NOT NULL,
-                nombre_dueno VARCHAR(100) NOT NULL,
-                lugar VARCHAR(100),
                 direccion VARCHAR(255),
                 nit VARCHAR(50),
                 contrasena VARCHAR(255) NOT NULL,
-                num_cajeros INT DEFAULT 1
+                num_cajeros INT DEFAULT 1,
+                correo VARCHAR(100),
+                admin_nombre VARCHAR(100),
+                admin_user VARCHAR(100) NOT NULL,
+                admin_password VARCHAR(255) NOT NULL,
+                admin_email VARCHAR(100),
+                cajero_email VARCHAR(100)
             )
         ''')
+
+        def add_column_if_missing(table, column, definition):
+            cursor.execute(f"SHOW COLUMNS FROM {table} LIKE %s", (column,))
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+        add_column_if_missing('config_tienda', 'correo', 'VARCHAR(100)')
+        add_column_if_missing('config_tienda', 'admin_nombre', 'VARCHAR(100)')
+        add_column_if_missing('config_tienda', 'admin_email', 'VARCHAR(100)')
+        add_column_if_missing('config_tienda', 'cajero_email', 'VARCHAR(100)')
+
+        cursor.execute("SHOW COLUMNS FROM config_tienda LIKE 'nombre_dueno'")
+        if cursor.fetchone():
+            cursor.execute("UPDATE config_tienda SET admin_nombre = nombre_dueno WHERE admin_nombre IS NULL")
 
         # NUEVAS TABLAS PARA FIADOS
         cursor.execute('''
@@ -328,14 +365,16 @@ def search_productos():
 
 @app.route('/api/productos', methods=['GET'])
 def get_productos():
+    tienda_id = request.args.get('tienda_id', 1, type=int)
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute('''
         SELECT p.*, c.nombre as categoria_nombre
         FROM productos p
-        LEFT JOIN categorias c ON p.categoria_id = c.id
+        LEFT JOIN categorias c ON p.categoria_id = c.id AND c.tienda_id = %s
+        WHERE p.tienda_id = %s
         ORDER BY p.nombre ASC
-    ''')
+    ''', (tienda_id, tienda_id))
     productos = cursor.fetchall()
         
     # Convertir a Entero para COP
@@ -351,6 +390,7 @@ def get_productos():
 def add_producto():
     try:
         prod_id       = request.form.get('id', '').strip() or None
+        tienda_id     = int(request.form.get('tienda_id', 1))
         codigo_barras = request.form.get('codigo_barras', '').strip()
         nombre        = request.form.get('nombre', '').strip()
         marca         = request.form.get('marca', '').strip()
@@ -424,9 +464,9 @@ def add_producto():
                 print(f"Stock SUMADO por código: {nombre} | Stock nuevo: {nuevo_stock}")
             else:
                 cursor.execute("""
-                    INSERT INTO productos (codigo_barras, nombre, marca, precio_unidad, unidad, stock, imagen_url, categoria_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (codigo_barras, nombre, marca, precio_unidad, unidad, stock, imagen_url, categoria_id))
+                    INSERT INTO productos (codigo_barras, nombre, marca, precio_unidad, unidad, stock, imagen_url, categoria_id, tienda_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (codigo_barras, nombre, marca, precio_unidad, unidad, stock, imagen_url, categoria_id, tienda_id))
                 print(f"Producto NUEVO guardado: {nombre}")
 
         conn.commit()
@@ -457,10 +497,11 @@ def delete_producto(id):
 
 @app.route('/api/categorias', methods=['GET'])
 def get_categorias():
+    tienda_id = request.args.get('tienda_id', 1, type=int)
     conn = get_db_connection()
     if not conn: return jsonify({'error': 'DB error'}), 500
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, nombre, imagen_url FROM categorias ORDER BY nombre ASC")
+    cursor.execute("SELECT id, nombre, imagen_url FROM categorias WHERE tienda_id = %s ORDER BY nombre ASC", (tienda_id,))
     cats = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -1070,7 +1111,7 @@ def get_tienda_config():
     conn = get_db_connection()
     if not conn: return jsonify({'error': 'DB error'}), 500
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT nombre_supermercado, nombre_dueno, lugar, direccion, nit, num_cajeros FROM config_tienda LIMIT 1")
+    cursor.execute("SELECT nombre_supermercado, direccion, nit, num_cajeros, admin_nombre, admin_email FROM config_tienda LIMIT 1")
     tienda = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -1085,17 +1126,32 @@ def setup_tienda():
     if not conn: return jsonify({'error': 'DB error'}), 500
     cursor = conn.cursor()
     try:
-        # Solo permitir un registro
-        cursor.execute("SELECT COUNT(*) FROM config_tienda")
-        if cursor.fetchone()[0] > 0:
-            return jsonify({'error': 'La tienda ya está registrada'}), 400
+        # Validaciones
+        if not data.get('nit') or not str(data['nit']).isdigit():
+            return jsonify({'error': 'El NIT debe contener solo números'}), 400
+        if not data.get('contrasena') or len(data['contrasena']) < 6 or len(data['contrasena']) > 18:
+            return jsonify({'error': 'La contraseña del supermercado debe tener entre 6 y 18 caracteres'}), 400
+        if not data.get('admin_password') or len(data['admin_password']) < 6 or len(data['admin_password']) > 18:
+            return jsonify({'error': 'La contraseña del administrador debe tener entre 6 y 18 caracteres'}), 400
+        if not data.get('admin_user'):
+            return jsonify({'error': 'El usuario del administrador es obligatorio'}), 400
+        if not data.get('admin_nombre'):
+            return jsonify({'error': 'El nombre completo del administrador es obligatorio'}), 400
+        if not data.get('admin_email'):
+            return jsonify({'error': 'El correo electrónico del administrador es obligatorio'}), 400
+
+        # Validar que el usuario admin no exista YA en otro establecimiento
+        cursor.execute("SELECT id FROM config_tienda WHERE admin_user = %s", (data['admin_user'],))
+        if cursor.fetchone():
+            return jsonify({'error': f'El usuario administrador "{data["admin_user"]}" ya existe en otro establecimiento'}), 400
         
         cursor.execute("""
-            INSERT INTO config_tienda (nombre_supermercado, nombre_dueno, lugar, direccion, nit, contrasena, num_cajeros, admin_user, admin_password)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'admin', 'admin123')
-        """, (data['nombre'], data['dueno'], data['lugar'], data['direccion'], data['nit'], data['contrasena'], data['cajeros']))
+            INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email']))
+        tienda_id = cursor.lastrowid
         conn.commit()
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'tienda_id': tienda_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -1111,9 +1167,9 @@ def update_tienda():
     try:
         cursor.execute("""
             UPDATE config_tienda 
-            SET nombre_supermercado=%s, nombre_dueno=%s, lugar=%s, direccion=%s, nit=%s, num_cajeros=%s
+            SET nombre_supermercado=%s, direccion=%s, nit=%s, num_cajeros=%s, admin_nombre=%s
             WHERE id = 1
-        """, (data['nombre'], data['dueno'], data['lugar'], data['direccion'], data['nit'], data['cajeros']))
+        """, (data['nombre'], data['direccion'], data['nit'], data['cajeros'], data['dueno']))
         conn.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -1149,6 +1205,136 @@ def login():
             return jsonify({'success': False, 'message': 'Credenciales incorrectas'}), 401
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.json
+    nombre_supermercado = data.get('nombre_supermercado', '').strip()
+    email = data.get('email', '').strip()
+    rol = data.get('rol', 'cajero')
+
+    if not nombre_supermercado or not email:
+        return jsonify({'success': False, 'message': 'Nombre y correo requeridos'}), 400
+
+    if rol != 'admin':
+        return jsonify({'success': False, 'message': 'Solo el administrador puede recuperar la contraseña'}), 403
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': 'DB error'}), 500
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Validar que nombre y correo coincidan
+        cursor.execute("SELECT admin_email FROM config_tienda WHERE nombre_supermercado = %s LIMIT 1", (nombre_supermercado,))
+        tienda = cursor.fetchone()
+        
+        if not tienda:
+            return jsonify({'success': False, 'message': 'Nombre de supermercado no encontrado'}), 404
+        
+        stored_admin_email = tienda['admin_email'].lower()
+        if stored_admin_email != email.lower():
+            return jsonify({'success': False, 'message': 'Correo no coincide con el registrado'}), 401
+
+        # Generar código de 4 dígitos
+        code = str(random.randint(1000, 9999))
+        recovery_codes[email.lower()] = code
+
+        return jsonify({'success': True, 'message': 'Código generado', 'code': code})
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/verify-code', methods=['POST'])
+def verify_code():
+    data = request.json
+    email = data.get('email')
+    code = data.get('code')
+
+    if not email or not code:
+        return jsonify({'success': False, 'message': 'Correo y código requeridos'}), 400
+
+    if recovery_codes.get(email.lower()) == code:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'success': False, 'message': 'Código incorrecto'}), 400
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    data = request.json
+    email = data.get('email')
+    code = data.get('code')
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+    rol = data.get('rol', 'cajero')
+
+    if not all([email, code, new_password, confirm_password]):
+        return jsonify({'success': False, 'message': 'Todos los campos requeridos'}), 400
+
+    if new_password != confirm_password:
+        return jsonify({'success': False, 'message': 'Las contraseñas no coinciden'}), 400
+
+    if len(new_password) < 6 or len(new_password) > 18:
+        return jsonify({'success': False, 'message': 'Contraseña debe tener 6-18 caracteres'}), 400
+
+    if recovery_codes.get(email.lower()) != code:
+        return jsonify({'success': False, 'message': 'Código incorrecto'}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'error': 'DB error'}), 500
+    cursor = conn.cursor()
+
+    try:
+        if rol != 'admin':
+            return jsonify({'success': False, 'message': 'Solo el administrador puede cambiar la contraseña por este método'}), 403
+
+        cursor.execute("UPDATE config_tienda SET admin_password = %s WHERE admin_email = %s", (new_password, email))
+        conn.commit()
+
+        # Limpiar código
+        recovery_codes.pop(email.lower(), None)
+
+        return jsonify({'success': True, 'message': 'Contraseña actualizada'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/api/admin/negocio/update', methods=['POST'])
+def update_negocio_admin():
+    data = request.json
+    conn = get_db_connection()
+    if not conn: return jsonify({'error': 'DB error'}), 500
+    cursor = conn.cursor()
+    try:
+        nombre = data.get('nombre', '').strip()
+        nit = data.get('nit', '').strip()
+        cajeros = data.get('cajeros')
+        contrasena = data.get('contrasena', '').strip()
+        if not nombre or not nit or not str(nit).isdigit() or not cajeros:
+            return jsonify({'success': False, 'message': 'Datos invalidos'}), 400
+        if contrasena and (len(contrasena) < 6 or len(contrasena) > 18):
+             return jsonify({'success': False, 'message': 'Contrasena: 6-18'}), 400
+        query = "UPDATE config_tienda SET nombre_supermercado=%s, nit=%s, num_cajeros=%s"
+        params = [nombre, nit, cajeros]
+        if contrasena:
+            query += ", contrasena=%s"
+            params.append(contrasena)
+        query += " WHERE id=1"
+        cursor.execute(query, params)
+        conn.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
     finally:
         cursor.close()
         conn.close()
