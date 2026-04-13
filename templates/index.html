@@ -160,7 +160,7 @@
 
             <!-- VERIFY CODE PANEL -->
             <div id="verify-code-panel" style="display: none;">
-                <button onclick="showForgotPassword(currentRol)"
+                <button type="button" onclick="toggleAuth('forgot-password')"
                     style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
                     Volver</button>
                 <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Código Generado</h1>
@@ -191,7 +191,7 @@
 
             <!-- RESET PASSWORD PANEL -->
             <div id="reset-password-panel" style="display: none;">
-                <button onclick="document.getElementById('reset-password-panel').style.display='none'; document.getElementById('verify-code-panel').style.display='block';"
+                <button type="button" onclick="toggleAuth('verify-code')"
                     style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
                     Volver</button>
                 <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Nueva Contraseña</h1>

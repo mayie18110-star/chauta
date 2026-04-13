@@ -302,16 +302,16 @@ document.addEventListener('DOMContentLoaded', () => {
         window.toggleAuth('role');
     };
 
-    let currentRol = 'cajero';
+    var currentRol = 'cajero';
     let codigoRecuperacion = ''; // Variable global para guardar el código
 
     window.showForgotPassword = (rol) => {
         currentRol = rol;
-        document.getElementById('forgot-password-panel').style.display = 'block';
-        document.getElementById('login-cajero-panel').style.display = 'none';
-        document.getElementById('login-admin-panel').style.display = 'none';
-        document.getElementById('verify-code-panel').style.display = 'none';
-        document.getElementById('reset-password-panel').style.display = 'none';
+        window.toggleAuth('forgot-password');
+        const verifyInput = document.getElementById('verify-code');
+        if (verifyInput) verifyInput.value = '';
+        const forgotEmail = document.getElementById('forgot-email');
+        if (forgotEmail) forgotEmail.focus();
     };
 
     window.copiarCodigo = () => {

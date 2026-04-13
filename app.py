@@ -7,7 +7,7 @@ import os
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
-import random
+import secrets
 
 # Cargar variables de entorno
 load_dotenv()
@@ -1249,8 +1249,11 @@ def forgot_password():
         if stored_admin_email != email.lower():
             return jsonify({'success': False, 'message': 'Correo no coincide con el registrado'}), 401
 
-        # Generar código de 4 dígitos
-        code = str(random.randint(1000, 9999))
+        # Generar código de 4 dígitos aleatorio
+        previous_code = recovery_codes.get(email.lower())
+        code = ''.join(secrets.choice('0123456789') for _ in range(4))
+        while previous_code and code == previous_code:
+            code = ''.join(secrets.choice('0123456789') for _ in range(4))
         recovery_codes[email.lower()] = code
 
         return jsonify({'success': True, 'message': 'Código generado', 'code': code})
