@@ -22,7 +22,6 @@ def initialize_database():
     try:
         conn = mysql.connector.connect(**db_config)
         cursor = conn.cursor()
-        print("✓ Conexión exitosa a la base de datos")
 
         # Crear tabla de categorías
         cursor.execute('''
@@ -33,7 +32,6 @@ def initialize_database():
                 tienda_id INT DEFAULT 1
             )
         ''')
-        print("✓ Tabla 'categorias' creada/verificada")
 
         # Crear tabla de productos
         cursor.execute('''
@@ -51,7 +49,6 @@ def initialize_database():
                 FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL
             )
         ''')
-        print("✓ Tabla 'productos' creada/verificada")
 
         # Crear tabla de ventas
         cursor.execute('''
@@ -64,7 +61,6 @@ def initialize_database():
                 caja_id INT DEFAULT 1
             )
         ''')
-        print("✓ Tabla 'ventas' creada/verificada")
 
         # Crear tabla de detalle de ventas
         cursor.execute('''
@@ -79,7 +75,6 @@ def initialize_database():
                 FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE RESTRICT
             )
         ''')
-        print("✓ Tabla 'detalle_ventas' creada/verificada")
 
         # Crear tabla de configuración de tienda
         cursor.execute('''
@@ -96,10 +91,8 @@ def initialize_database():
                 admin_password VARCHAR(255) NOT NULL
             )
         ''')
-        print("✓ Tabla 'config_tienda' creada/verificada")
 
         conn.commit()
-        print("\n✓✓✓ Base de datos inicializada correctamente ✓✓✓")
         cursor.close()
         conn.close()
 

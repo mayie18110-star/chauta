@@ -141,6 +141,8 @@ def initialize_database():
         add_column_if_missing('config_tienda', 'admin_nombre', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'admin_email', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'cajero_email', 'VARCHAR(100)')
+        add_column_if_missing('categorias', 'tienda_id', 'INT DEFAULT 1')
+        add_column_if_missing('productos', 'tienda_id', 'INT DEFAULT 1')
 
         cursor.execute("SHOW COLUMNS FROM config_tienda LIKE 'nombre_dueno'")
         if cursor.fetchone():
@@ -180,9 +182,8 @@ def initialize_database():
             ]
             cursor.executemany("INSERT INTO categorias (nombre) VALUES (%s)", categorias_iniciales)
             conn.commit()
-            print("Categorías iniciales insertadas.")
 
-        # MIGRACIÓN: Asegurar que stock y cantidad sean DECIMAL (Ejecutar si ya existen)
+        # MIGRACIÓN: Asegurar que stock y cantidad sean DECIMAL (Ejecutar si ya existan)
         try:
             cursor.execute("ALTER TABLE productos MODIFY stock DECIMAL(10, 3)")
             cursor.execute("ALTER TABLE detalle_ventas MODIFY cantidad DECIMAL(10, 3)")
@@ -197,7 +198,6 @@ def initialize_database():
                 cursor.execute("ALTER TABLE config_tienda ADD COLUMN admin_user VARCHAR(100)")
                 cursor.execute("ALTER TABLE config_tienda ADD COLUMN admin_password VARCHAR(255)")
                 cursor.execute("UPDATE config_tienda SET admin_user = 'admin', admin_password = 'admin123' WHERE admin_user IS NULL")
-                print("MIGRACION ROLES EXITOSA: Creados admin_user y admin_password por defecto (admin/admin123)")
             except Exception as ex:
                 pass # Ya existen las columnas
                 
@@ -233,25 +233,13 @@ def initialize_database():
                 ''')
             except Exception as ex:
                 pass 
-
-            # MIGRACIÓN TIENDA_ID en categorias y productos
-            try:
-                cursor.execute("ALTER TABLE categorias ADD COLUMN tienda_id INT DEFAULT 1")
-            except Exception:
-                pass
-            try:
-                cursor.execute("ALTER TABLE productos ADD COLUMN tienda_id INT DEFAULT 1")
-            except Exception:
-                pass
                 
             conn.commit()
-            print("Migración de tablas a DECIMAL(10, 3) y Roles exitosa.")
         except Exception as e:
             print(f"Nota: La migración a DECIMAL ya se realizó o falló controladamente: {e}")
 
         cursor.close()
         conn.close()
-        print("Base de datos lista.")
 
 try:
     initialize_database()
