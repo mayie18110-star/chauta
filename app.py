@@ -70,7 +70,8 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS categorias (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nombre VARCHAR(100) UNIQUE NOT NULL,
-                imagen_url TEXT
+                imagen_url TEXT,
+                tienda_id INT DEFAULT 1
             )
         ''')
 
@@ -85,6 +86,7 @@ def initialize_database():
                 stock DECIMAL(10, 3) DEFAULT 0,
                 imagen_url TEXT,
                 categoria_id INT,
+                tienda_id INT DEFAULT 1,
                 FOREIGN KEY (categoria_id) REFERENCES categorias(id) ON DELETE SET NULL
             )
         ''')
@@ -231,6 +233,16 @@ def initialize_database():
                 ''')
             except Exception as ex:
                 pass 
+
+            # MIGRACIÓN TIENDA_ID en categorias y productos
+            try:
+                cursor.execute("ALTER TABLE categorias ADD COLUMN tienda_id INT DEFAULT 1")
+            except Exception:
+                pass
+            try:
+                cursor.execute("ALTER TABLE productos ADD COLUMN tienda_id INT DEFAULT 1")
+            except Exception:
+                pass
                 
             conn.commit()
             print("Migración de tablas a DECIMAL(10, 3) y Roles exitosa.")
