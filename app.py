@@ -536,11 +536,14 @@ def add_categoria():
             print(f"Categoría ACTUALIZADA (ID {cat_id}): {nombre}")
         else:
             # INSERTAR
-            cursor.execute("INSERT INTO categorias (nombre, imagen_url) VALUES (%s, %s)", (nombre, imagen_url))
+            cursor.execute("INSERT INTO categorias (nombre, imagen_url, tienda_id) VALUES (%s, %s, %s)", (nombre, imagen_url, 1))
             print(f"Categoría CREADA: {nombre}")
             
         conn.commit()
         return jsonify({'success': True})
+    except mysql.connector.IntegrityError as e:
+        print(f"ERROR en add_categoria (integrity): {e}")
+        return jsonify({'error': 'La categoría ya existe o los datos son inválidos'}), 409
     except Exception as e:
         print(f"ERROR en add_categoria: {e}")
         return jsonify({'error': str(e)}), 500

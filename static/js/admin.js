@@ -333,7 +333,16 @@ document.addEventListener('DOMContentLoaded', () => {
             cargarCategorias();
             cargarCategoriasSelect(); // Refrescar el select de productos
         } else {
-            alert('❌ Error al procesar categoría');
+            let errorMessage = '❌ Error al procesar categoría';
+            try {
+                const data = await response.json();
+                if (data && data.error) {
+                    errorMessage += `: ${data.error}`;
+                }
+            } catch (e) {
+                // No JSON recibido
+            }
+            alert(errorMessage);
         }
     });
 
