@@ -1225,9 +1225,9 @@ def login():
 
 @app.route('/api/forgot-password', methods=['POST'])
 def forgot_password():
-    data = request.json
-    nombre_supermercado = data.get('nombre_supermercado', '').strip()
-    email = data.get('email', '').strip()
+    data = request.get_json(silent=True) or {}
+    nombre_supermercado = (data.get('nombre_supermercado') or '').strip()
+    email = (data.get('email') or '').strip()
     rol = data.get('rol', 'cajero')
 
     if not nombre_supermercado or not email:
@@ -1242,9 +1242,14 @@ def forgot_password():
     cursor = conn.cursor(dictionary=True)
 
     try:
+        def normalize_text(value):
+            if value is None:
+                return ''
+            return str(value).strip().lower()
+
         # Validar que nombre y correo coincidan sin depender de mayusculas o espacios extra
         cursor.execute("""
-            SELECT nombre_supermercado, admin_email
+            SELECT nombre_supermercado, admin_email, correo
             FROM config_tienda
             WHERE LOWER(TRIM(nombre_supermercado)) = LOWER(TRIM(%s))
             LIMIT 1
@@ -1254,19 +1259,20 @@ def forgot_password():
         if not tienda:
             return jsonify({'success': False, 'message': 'Nombre de supermercado no encontrado'}), 404
         
-        if not tienda.get('admin_email'):
+        stored_email = normalize_text(tienda.get('admin_email')) or normalize_text(tienda.get('correo'))
+        if not stored_email:
             return jsonify({'success': False, 'message': 'El supermercado no tiene un correo de administrador registrado'}), 400
 
-        stored_admin_email = tienda['admin_email'].strip().lower()
-        if stored_admin_email != email.lower():
+        normalized_email = normalize_text(email)
+        if stored_email != normalized_email:
             return jsonify({'success': False, 'message': 'Correo no coincide con el registrado'}), 401
 
         # Generar código de 4 dígitos aleatorio
-        previous_code = recovery_codes.get(email.lower())
+        previous_code = recovery_codes.get(normalized_email)
         code = ''.join(secrets.choice('0123456789') for _ in range(4))
         while previous_code and code == previous_code:
             code = ''.join(secrets.choice('0123456789') for _ in range(4))
-        recovery_codes[email.lower()] = code
+        recovery_codes[normalized_email] = code
 
         return jsonify({'success': True, 'message': 'Código generado', 'code': code})
         
@@ -1279,26 +1285,29 @@ def forgot_password():
 
 @app.route('/api/verify-code', methods=['POST'])
 def verify_code():
-    data = request.json
-    email = data.get('email')
-    code = data.get('code')
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip()
+    code = (data.get('code') or '').strip()
 
     if not email or not code:
         return jsonify({'success': False, 'message': 'Correo y código requeridos'}), 400
 
-    if recovery_codes.get(email.lower()) == code:
+    normalized_email = email.lower()
+
+    if recovery_codes.get(normalized_email) == code:
         return jsonify({'success': True})
     else:
         return jsonify({'success': False, 'message': 'Código incorrecto'}), 400
 
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
-    data = request.json
-    email = data.get('email')
-    code = data.get('code')
+    data = request.get_json(silent=True) or {}
+    email = (data.get('email') or '').strip()
+    code = (data.get('code') or '').strip()
     new_password = data.get('new_password')
     confirm_password = data.get('confirm_password')
     rol = data.get('rol', 'cajero')
+    email = email.lower()
 
     if not all([email, code, new_password, confirm_password]):
         return jsonify({'success': False, 'message': 'Todos los campos requeridos'}), 400
@@ -1321,8 +1330,16 @@ def reset_password():
         if rol != 'admin':
             return jsonify({'success': False, 'message': 'Solo el administrador puede cambiar la contraseña por este método'}), 403
 
-        cursor.execute("UPDATE config_tienda SET admin_password = %s WHERE admin_email = %s", (new_password, email))
+        cursor.execute("""
+            UPDATE config_tienda
+            SET admin_password = %s
+            WHERE LOWER(TRIM(admin_email)) = LOWER(TRIM(%s))
+               OR LOWER(TRIM(correo)) = LOWER(TRIM(%s))
+        """, (new_password, email, email))
         conn.commit()
+
+        if cursor.rowcount == 0:
+            return jsonify({'success': False, 'message': 'No se encontro un administrador con ese correo'}), 404
 
         # Limpiar código
         recovery_codes.pop(email.lower(), None)
