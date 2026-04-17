@@ -1242,14 +1242,22 @@ def forgot_password():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # Validar que nombre y correo coincidan
-        cursor.execute("SELECT admin_email FROM config_tienda WHERE nombre_supermercado = %s LIMIT 1", (nombre_supermercado,))
+        # Validar que nombre y correo coincidan sin depender de mayusculas o espacios extra
+        cursor.execute("""
+            SELECT nombre_supermercado, admin_email
+            FROM config_tienda
+            WHERE LOWER(TRIM(nombre_supermercado)) = LOWER(TRIM(%s))
+            LIMIT 1
+        """, (nombre_supermercado,))
         tienda = cursor.fetchone()
         
         if not tienda:
             return jsonify({'success': False, 'message': 'Nombre de supermercado no encontrado'}), 404
         
-        stored_admin_email = tienda['admin_email'].lower()
+        if not tienda.get('admin_email'):
+            return jsonify({'success': False, 'message': 'El supermercado no tiene un correo de administrador registrado'}), 400
+
+        stored_admin_email = tienda['admin_email'].strip().lower()
         if stored_admin_email != email.lower():
             return jsonify({'success': False, 'message': 'Correo no coincide con el registrado'}), 401
 
