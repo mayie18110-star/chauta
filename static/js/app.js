@@ -1600,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pdf-metodo-pago').innerText = metodoPagoActual.charAt(0).toUpperCase() + metodoPagoActual.slice(1);
 
         const nroCajaFactura = String((tiendaConfig && tiendaConfig.cajeroSeleccionado) ? tiendaConfig.cajeroSeleccionado : 1).padStart(2, '0');
-        document.getElementById('pdf-cajero-name').innerText = (t.nombre_dueno || "Administrador");
+        document.getElementById('pdf-cajero-name').innerText = nroCajaFactura;
 
         const itemsBody = document.getElementById('pdf-items-list');
         itemsBody.innerHTML = '';
