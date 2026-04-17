@@ -6,6 +6,7 @@ from decimal import Decimal
 import os
 import base64
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
 import secrets
@@ -50,6 +51,30 @@ def send_recovery_code_email(recipient_email, supermarket_name, code):
 
 # Diccionario para almacenar códigos de recuperación temporales
 recovery_codes = {}
+
+PASSWORD_HASH_PREFIXES = ('pbkdf2:', 'scrypt:')
+
+def hash_password(password):
+    return generate_password_hash(password)
+
+def password_is_hashed(password):
+    if not password:
+        return False
+    return str(password).startswith(PASSWORD_HASH_PREFIXES)
+
+def verify_password(stored_password, provided_password):
+    if not stored_password or not provided_password:
+        return False
+    if password_is_hashed(stored_password):
+        return check_password_hash(stored_password, provided_password)
+    return stored_password == provided_password
+
+def sanitize_tienda_data(tienda):
+    if not tienda:
+        return tienda
+    tienda.pop('contrasena', None)
+    tienda.pop('admin_password', None)
+    return tienda
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -1179,12 +1204,12 @@ def setup_tienda():
             cursor.execute("""
                 INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email, nombre_dueno)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email'], data['admin_nombre']))
+            """, (data['nombre'], data['direccion'], data['nit'], hash_password(data['contrasena']), data['cajeros'], data['admin_nombre'], data['admin_user'], hash_password(data['admin_password']), data['admin_email'], data['admin_nombre']))
         else:
             cursor.execute("""
                 INSERT INTO config_tienda (nombre_supermercado, direccion, nit, contrasena, num_cajeros, admin_nombre, admin_user, admin_password, admin_email)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (data['nombre'], data['direccion'], data['nit'], data['contrasena'], data['cajeros'], data['admin_nombre'], data['admin_user'], data['admin_password'], data['admin_email']))
+            """, (data['nombre'], data['direccion'], data['nit'], hash_password(data['contrasena']), data['cajeros'], data['admin_nombre'], data['admin_user'], hash_password(data['admin_password']), data['admin_email']))
 
         tienda_id = cursor.lastrowid
         conn.commit()
@@ -1226,20 +1251,35 @@ def login():
     
     try:
         if rol == 'admin':
-            admin_user = data.get('admin_user')
+            admin_user = (data.get('admin_user') or '').strip()
             admin_password = data.get('admin_password')
-            cursor.execute("SELECT * FROM config_tienda WHERE admin_user = %s AND admin_password = %s", (admin_user, admin_password))
+            cursor.execute("SELECT * FROM config_tienda WHERE admin_user = %s LIMIT 1", (admin_user,))
         else:
-            nombre = data.get('nombre')
+            nombre = (data.get('nombre') or '').strip()
             password = data.get('password')
-            cursor.execute("SELECT * FROM config_tienda WHERE LOWER(nombre_supermercado) = LOWER(%s) AND contrasena = %s", (nombre, password))
+            cursor.execute("SELECT * FROM config_tienda WHERE LOWER(nombre_supermercado) = LOWER(%s) LIMIT 1", (nombre,))
             
         tienda = cursor.fetchone()
         
-        if tienda:
-            return jsonify({'success': True, 'tienda': tienda, 'rol': rol})
-        else:
+        if not tienda:
             return jsonify({'success': False, 'message': 'Credenciales incorrectas'}), 401
+
+        password_field = 'admin_password' if rol == 'admin' else 'contrasena'
+        provided_password = admin_password if rol == 'admin' else password
+        stored_password = tienda.get(password_field)
+
+        if not verify_password(stored_password, provided_password):
+            return jsonify({'success': False, 'message': 'Credenciales incorrectas'}), 401
+
+        if not password_is_hashed(stored_password):
+            cursor.execute(
+                f"UPDATE config_tienda SET {password_field} = %s WHERE id = %s",
+                (hash_password(provided_password), tienda['id'])
+            )
+            conn.commit()
+            tienda[password_field] = None
+
+        return jsonify({'success': True, 'tienda': sanitize_tienda_data(tienda), 'rol': rol})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -1359,7 +1399,7 @@ def reset_password():
             SET admin_password = %s
             WHERE LOWER(TRIM(admin_email)) = LOWER(TRIM(%s))
                OR LOWER(TRIM(correo)) = LOWER(TRIM(%s))
-        """, (new_password, email, email))
+        """, (hash_password(new_password), email, email))
         conn.commit()
 
         if cursor.rowcount == 0:
@@ -1410,7 +1450,7 @@ def update_negocio_admin():
         params = [nombre, nit, cajeros]
         if contrasena:
             query += ", contrasena=%s"
-            params.append(contrasena)
+            params.append(hash_password(contrasena))
         query += ", qr_transferencia_url=%s"
         params.append(qr_url)
         query += " WHERE id=%s"
