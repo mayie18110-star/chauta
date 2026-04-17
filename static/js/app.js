@@ -1586,8 +1586,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Datos del pago (Obtenidos del modal)
         const esTransferencia = metodoPagoActual === 'transferencia';
-        const efectivoRecibido = esTransferencia ? 0 : (parseFloat(inputPagoRecibido.value) || total);
-        const cambioEntregado = esTransferencia ? 0 : (efectivoRecibido >= total ? (efectivoRecibido - total) : 0);
+        const valorPagado = esTransferencia ? total : (parseFloat(inputPagoRecibido.value) || total);
 
         // Llenar datos de la tienda dinámicamente
         const t = tiendaConfig || { nombre_supermercado: 'supermercado Chauta', nit: '000', lugar: 'Madrid', direccion: 'Vereda Chauta' };
@@ -1604,11 +1603,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.getElementById('pdf-subtotal').innerText = `$${total.toLocaleString()}`;
         document.getElementById('pdf-total').innerText = `$${total.toLocaleString()}`;
-        document.getElementById('pdf-pago-recibido').innerText = `$${Math.round(efectivoRecibido).toLocaleString()}`;
-        document.getElementById('pdf-cambio').innerText = `$${Math.round(cambioEntregado).toLocaleString()}`;
+        document.getElementById('pdf-pago-recibido').innerText = `$${Math.round(valorPagado).toLocaleString()}`;
         document.getElementById('pdf-metodo-pago').innerText = metodoPagoActual.charAt(0).toUpperCase() + metodoPagoActual.slice(1);
-        document.getElementById('pdf-pago-recibido-row').style.display = esTransferencia ? 'none' : 'flex';
-        document.getElementById('pdf-cambio-row').style.display = esTransferencia ? 'none' : 'flex';
 
         const nroCajaFactura = String((tiendaConfig && tiendaConfig.cajeroSeleccionado) ? tiendaConfig.cajeroSeleccionado : 1).padStart(2, '0');
         document.getElementById('pdf-cajero-name').innerText = `Caja ${nroCajaFactura}`;
