@@ -163,23 +163,16 @@
                 <button type="button" onclick="toggleAuth('forgot-password')"
                     style="background:none; border:none; color:#a0aec0; margin-bottom:15px; font-size:16px; cursor:pointer;">⬅️
                     Volver</button>
-                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Código Generado</h1>
-                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Tu código de 4 dígitos ya fue generado. Cópialo e ingésalo a continuación.</p>
-                
-                <!-- PANEL DE CÓDIGO -->
+                <h1 style="color: var(--color-primary); font-size: 32px; margin-bottom: 10px;">Verifica tu Correo</h1>
+                <p style="margin-bottom: 20px; font-size: 18px; color: #555;">Te enviamos un código de 4 dígitos al correo registrado. Revísalo e ingrésalo a continuación.</p>
+
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
-                    <p style="color: #e0e7ff; font-size: 14px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Tu Código</p>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="background: rgba(255,255,255,0.1); padding: 12px 20px; border-radius: 10px; flex: 1;">
-                            <span id="codigo-display" style="color: white; font-size: 36px; font-weight: 800; letter-spacing: 5px; font-family: monospace;">0000</span>
-                        </div>
-                        <button type="button" onclick="copiarCodigo()" style="background: white; color: #667eea; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 14px; transition: all 0.2s;">
-                            📋 Copiar
-                        </button>
-                    </div>
+                    <p style="color: #ffffff; font-size: 18px; margin: 0; line-height: 1.6; text-align: center;">
+                        Revisa tu bandeja de entrada y también la carpeta de spam o correo no deseado.
+                    </p>
                 </div>
-                
-                <p style="margin-bottom: 15px; font-size: 16px; color: #718096; text-align: center;">Pega el código en el campo de abajo</p>
+
+                <p style="margin-bottom: 15px; font-size: 16px; color: #718096; text-align: center;">Escribe aquí el código recibido</p>
                 <form id="verify-code-form" class="auth-form">
                     <div class="form-group">
                         <label style="font-size:18px; font-weight:600;">Ingresa el Código</label>

@@ -303,8 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     var currentRol = 'cajero';
-    let codigoRecuperacion = ''; // Variable global para guardar el código
-
     window.showForgotPassword = (rol) => {
         currentRol = rol;
         window.toggleAuth('forgot-password');
@@ -312,22 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (verifyInput) verifyInput.value = '';
         const forgotEmail = document.getElementById('forgot-email');
         if (forgotEmail) forgotEmail.focus();
-    };
-
-    window.copiarCodigo = () => {
-        const codigo = document.getElementById('codigo-display').innerText;
-        navigator.clipboard.writeText(codigo).then(() => {
-            const btn = event.target;
-            const textOriginal = btn.innerText;
-            btn.innerText = '✓ Copiado';
-            btn.style.background = '#48bb78';
-            btn.style.color = 'white';
-            setTimeout(() => {
-                btn.innerText = textOriginal;
-                btn.style.background = 'white';
-                btn.style.color = '#667eea';
-            }, 2000);
-        });
     };
 
     document.getElementById('setup-form').onsubmit = async (e) => {
@@ -450,8 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const result = await res.json();
         if (result.success) {
-            codigoRecuperacion = result.code;
-            document.getElementById('codigo-display').innerText = result.code;
+            alert(result.message || 'Te enviamos un código al correo registrado');
             document.getElementById('forgot-password-panel').style.display = 'none';
             document.getElementById('verify-code-panel').style.display = 'block';
         } else {

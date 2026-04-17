@@ -30,6 +30,23 @@ app.config['MAIL_TEST_MODE'] = os.environ.get('MAIL_TEST_MODE', 'True').lower() 
 
 mail = Mail(app)
 
+def send_recovery_code_email(recipient_email, supermarket_name, code):
+    if not app.config.get('MAIL_USERNAME') or not app.config.get('MAIL_PASSWORD'):
+        raise RuntimeError('El servidor de correo no está configurado correctamente')
+
+    subject = 'Codigo de recuperacion de contrasena'
+    body = (
+        f'Hola,\n\n'
+        f'Recibimos una solicitud para restablecer la contrasena del administrador de "{supermarket_name}".\n'
+        f'Tu codigo de recuperacion es: {code}\n\n'
+        f'Si no solicitaste este cambio, puedes ignorar este mensaje.\n'
+    )
+    message = Message(subject=subject, recipients=[recipient_email], body=body)
+    try:
+        mail.send(message)
+    except Exception as exc:
+        raise RuntimeError('No fue posible enviar el codigo al correo registrado') from exc
+
 # Diccionario para almacenar códigos de recuperación temporales
 recovery_codes = {}
 
@@ -1274,7 +1291,8 @@ def forgot_password():
             code = ''.join(secrets.choice('0123456789') for _ in range(4))
         recovery_codes[normalized_email] = code
 
-        return jsonify({'success': True, 'message': 'Código generado', 'code': code})
+        send_recovery_code_email(stored_email, tienda.get('nombre_supermercado') or nombre_supermercado, code)
+        return jsonify({'success': True, 'message': 'Te enviamos un codigo de 4 digitos al correo registrado'})
         
     except Exception as e:
         print(f"Error: {e}")
