@@ -197,6 +197,27 @@ def initialize_database():
         except Exception:
             pass
 
+        cursor.execute("SELECT id, contrasena, admin_password FROM config_tienda")
+        tiendas_existentes = cursor.fetchall()
+        for tienda_id, contrasena_actual, admin_password_actual in tiendas_existentes:
+            updates = []
+            params = []
+
+            if contrasena_actual and not password_is_hashed(contrasena_actual):
+                updates.append("contrasena = %s")
+                params.append(hash_password(contrasena_actual))
+
+            if admin_password_actual and not password_is_hashed(admin_password_actual):
+                updates.append("admin_password = %s")
+                params.append(hash_password(admin_password_actual))
+
+            if updates:
+                params.append(tienda_id)
+                cursor.execute(
+                    f"UPDATE config_tienda SET {', '.join(updates)} WHERE id = %s",
+                    params
+                )
+
         # NUEVAS TABLAS PARA FIADOS
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS clientes_fiados (
