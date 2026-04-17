@@ -1459,11 +1459,15 @@ document.addEventListener('DOMContentLoaded', () => {
             btnPMTransfer.classList.remove('active');
             secEfectivo.classList.add('active');
             secTransferencia.classList.remove('active');
+            setTimeout(() => inputPagoRecibido.focus(), 150);
         } else {
             btnPMEfectivo.classList.remove('active');
             btnPMTransfer.classList.add('active');
             secEfectivo.classList.remove('active');
             secTransferencia.classList.add('active');
+            inputPagoRecibido.value = '';
+            cambioVal.innerText = '$0';
+            cambioVal.parentElement.style.color = '#2d3748';
         }
     }
 
@@ -1508,17 +1512,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const total = Math.round(subtotal);
 
-        const recibido = parseFloat(inputPagoRecibido.value);
-        if (!inputPagoRecibido.value.trim() || isNaN(recibido) || recibido <= 0) {
-            alert('Debe ingresar el monto pagado para poder finalizar la venta.');
-            inputPagoRecibido.focus();
-            return;
-        }
+        if (metodoPagoActual === 'efectivo') {
+            const recibido = parseFloat(inputPagoRecibido.value);
+            if (!inputPagoRecibido.value.trim() || isNaN(recibido) || recibido <= 0) {
+                alert('Debe ingresar el monto pagado para poder finalizar la venta.');
+                inputPagoRecibido.focus();
+                return;
+            }
 
-        if (recibido < total) {
-            alert('El monto pagado debe ser igual o superior al total de la venta.');
-            inputPagoRecibido.focus();
-            return;
+            if (recibido < total) {
+                alert('El monto pagado debe ser igual o superior al total de la venta.');
+                inputPagoRecibido.focus();
+                return;
+            }
         }
 
         try {
@@ -1579,8 +1585,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const facturaNroFull = `MRC-${year}${month}${day}-${String(numero).padStart(4, '0')}`;
 
         // Datos del pago (Obtenidos del modal)
-        const efectivoRecibido = parseFloat(inputPagoRecibido.value) || total;
-        const cambioEntregado = efectivoRecibido >= total ? (efectivoRecibido - total) : 0;
+        const esTransferencia = metodoPagoActual === 'transferencia';
+        const efectivoRecibido = esTransferencia ? 0 : (parseFloat(inputPagoRecibido.value) || total);
+        const cambioEntregado = esTransferencia ? 0 : (efectivoRecibido >= total ? (efectivoRecibido - total) : 0);
 
         // Llenar datos de la tienda dinámicamente
         const t = tiendaConfig || { nombre_supermercado: 'supermercado Chauta', nit: '000', lugar: 'Madrid', direccion: 'Vereda Chauta' };
@@ -1600,6 +1607,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pdf-pago-recibido').innerText = `$${Math.round(efectivoRecibido).toLocaleString()}`;
         document.getElementById('pdf-cambio').innerText = `$${Math.round(cambioEntregado).toLocaleString()}`;
         document.getElementById('pdf-metodo-pago').innerText = metodoPagoActual.charAt(0).toUpperCase() + metodoPagoActual.slice(1);
+        document.getElementById('pdf-pago-recibido-row').style.display = esTransferencia ? 'none' : 'flex';
+        document.getElementById('pdf-cambio-row').style.display = esTransferencia ? 'none' : 'flex';
 
         const nroCajaFactura = String((tiendaConfig && tiendaConfig.cajeroSeleccionado) ? tiendaConfig.cajeroSeleccionado : 1).padStart(2, '0');
         document.getElementById('pdf-cajero-name').innerText = `Caja ${nroCajaFactura}`;
