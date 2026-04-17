@@ -4,6 +4,7 @@ from mysql.connector import Error
 from datetime import datetime
 from decimal import Decimal
 import os
+import base64
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
@@ -158,13 +159,18 @@ def initialize_database():
         add_column_if_missing('config_tienda', 'admin_nombre', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'admin_email', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'cajero_email', 'VARCHAR(100)')
-        add_column_if_missing('config_tienda', 'qr_transferencia_url', 'TEXT')
+        add_column_if_missing('config_tienda', 'qr_transferencia_url', 'LONGTEXT')
         add_column_if_missing('categorias', 'tienda_id', 'INT DEFAULT 1')
         add_column_if_missing('productos', 'tienda_id', 'INT DEFAULT 1')
 
         cursor.execute("SHOW COLUMNS FROM config_tienda LIKE 'nombre_dueno'")
         if cursor.fetchone():
             cursor.execute("UPDATE config_tienda SET admin_nombre = nombre_dueno WHERE admin_nombre IS NULL")
+
+        try:
+            cursor.execute("ALTER TABLE config_tienda MODIFY qr_transferencia_url LONGTEXT")
+        except Exception:
+            pass
 
         # NUEVAS TABLAS PARA FIADOS
         cursor.execute('''
@@ -1132,7 +1138,7 @@ def get_tienda_config():
     conn = get_db_connection()
     if not conn: return jsonify({'error': 'DB error'}), 500
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT nombre_supermercado, direccion, nit, num_cajeros, admin_nombre, admin_email FROM config_tienda LIMIT 1")
+    cursor.execute("SELECT nombre_supermercado, direccion, nit, num_cajeros, admin_nombre, admin_email, qr_transferencia_url FROM config_tienda LIMIT 1")
     tienda = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -1385,24 +1391,30 @@ def update_negocio_admin():
         if contrasena and (len(contrasena) < 6 or len(contrasena) > 18):
             return jsonify({'success': False, 'message': 'Contrasena: 6-18'}), 400
         
-        # Manejar archivo QR si se proporciona
-        qr_url = None
+        # Mantener el QR actual hasta que el administrador lo reemplace
+        cursor.execute("SELECT id, qr_transferencia_url FROM config_tienda ORDER BY id ASC LIMIT 1")
+        tienda_actual = cursor.fetchone()
+        if not tienda_actual:
+            return jsonify({'success': False, 'message': 'No existe configuracion de tienda'}), 404
+
+        tienda_id = tienda_actual[0]
+        qr_url = tienda_actual[1]
         qr_file = request.files.get('qr_transferencia')
         if qr_file and qr_file.filename != '' and allowed_file(qr_file.filename):
-            filename = secure_filename(f"qr_{datetime.now().strftime('%y%m%d%H%M')}_{qr_file.filename}")
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            qr_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            qr_url = f'/static/img/{filename}'
+            mime_type = qr_file.mimetype or 'image/png'
+            qr_bytes = qr_file.read()
+            qr_base64 = base64.b64encode(qr_bytes).decode('ascii')
+            qr_url = f'data:{mime_type};base64,{qr_base64}'
         
         query = "UPDATE config_tienda SET nombre_supermercado=%s, nit=%s, num_cajeros=%s"
         params = [nombre, nit, cajeros]
         if contrasena:
             query += ", contrasena=%s"
             params.append(contrasena)
-        if qr_url:
-            query += ", qr_transferencia_url=%s"
-            params.append(qr_url)
-        query += " WHERE id=1"
+        query += ", qr_transferencia_url=%s"
+        params.append(qr_url)
+        query += " WHERE id=%s"
+        params.append(tienda_id)
         cursor.execute(query, params)
         conn.commit()
         return jsonify({'success': True})

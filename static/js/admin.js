@@ -710,6 +710,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const formEditarNegocio = document.getElementById('form-editar-negocio');
     const modalEditarNegocio = document.getElementById('modal-editar-negocio');
 
+    let qrActualNegocio = '';
+
+    const renderPreviewQr = (qrUrl) => {
+        const previewQr = document.getElementById('preview-qr');
+        if (qrUrl) {
+            const cacheSafeUrl = qrUrl.startsWith('data:') ? qrUrl : `${qrUrl}?v=${Date.now()}`;
+            previewQr.innerHTML = `<img src="${cacheSafeUrl}" style="max-width: 150px; border-radius: 8px; border: 2px solid #e2e8f0;">`;
+        } else {
+            previewQr.innerHTML = '<small style="color: #a0aec0;">No hay QR cargado</small>';
+        }
+    };
+
     window.abrirModalEditarNegocio = async () => {
         try {
             const res = await fetch('/api/tienda');
@@ -721,12 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('edit-password-cajero').value = '';
                 
                 // Mostrar QR existente si hay
-                const previewQr = document.getElementById('preview-qr');
-                if (data.tienda.qr_transferencia_url) {
-                    previewQr.innerHTML = `<img src="${data.tienda.qr_transferencia_url}" style="max-width: 150px; border-radius: 8px; border: 2px solid #e2e8f0;">`;
-                } else {
-                    previewQr.innerHTML = '<small style="color: #a0aec0;">No hay QR cargado</small>';
-                }
+                qrActualNegocio = data.tienda.qr_transferencia_url || '';
+                renderPreviewQr(qrActualNegocio);
             }
         } catch (err) {
             console.error('Error:', err);
@@ -745,13 +753,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             reader.readAsDataURL(file);
         } else {
-            preview.innerHTML = '<small style="color: #a0aec0;">No hay QR cargado</small>';
+            renderPreviewQr(qrActualNegocio);
         }
     });
 
     window.cerrarModalEditarNegocio = () => {
         modalEditarNegocio.style.display = 'none';
         formEditarNegocio.reset();
+        renderPreviewQr(qrActualNegocio);
     };
 
     modalEditarNegocio.onclick = (e) => {

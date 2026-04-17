@@ -1436,7 +1436,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Mostrar QR guardado o imagen por defecto
         if (tiendaConfig && tiendaConfig.qr_transferencia_url) {
-            qrImg.src = tiendaConfig.qr_transferencia_url + '?v=' + Date.now();
+            qrImg.src = tiendaConfig.qr_transferencia_url.startsWith('data:')
+                ? tiendaConfig.qr_transferencia_url
+                : tiendaConfig.qr_transferencia_url + '?v=' + Date.now();
             qrImg.style.display = 'block';
         } else {
             // Si no hay QR configurado, mostrar placeholder
