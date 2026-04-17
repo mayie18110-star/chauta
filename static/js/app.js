@@ -533,6 +533,25 @@ document.addEventListener('DOMContentLoaded', () => {
     async function mostrarAperturaCaja(nro) {
         cajaSeleccionadaTemporal = nro;
 
+        try {
+            const res = await fetch(`/api/caja/verificar-apertura?caja_id=${nro}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'No se pudo verificar la apertura');
+            }
+
+            // Si la caja ya fue abierta hoy, entrar directo sin volver a pedir base.
+            if (data.abierta) {
+                finalizarAccesoCaja(nro);
+                return;
+            }
+        } catch (error) {
+            console.error('Error verificando apertura de caja:', error);
+            alert('No se pudo verificar si la caja ya fue abierta hoy.');
+            return;
+        }
+
         document.getElementById('cajero-selection-panel').style.display = 'none';
         document.getElementById('apertura-caja-panel').style.display = 'block';
         document.getElementById('lbl-caja-nro').innerText = nro;
