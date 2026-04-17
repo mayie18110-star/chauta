@@ -719,12 +719,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('edit-nit').value = data.tienda.nit || '';
                 document.getElementById('edit-cajeros').value = data.tienda.num_cajeros || 1;
                 document.getElementById('edit-password-cajero').value = '';
+                
+                // Mostrar QR existente si hay
+                const previewQr = document.getElementById('preview-qr');
+                if (data.tienda.qr_transferencia_url) {
+                    previewQr.innerHTML = `<img src="${data.tienda.qr_transferencia_url}" style="max-width: 150px; border-radius: 8px; border: 2px solid #e2e8f0;">`;
+                } else {
+                    previewQr.innerHTML = '<small style="color: #a0aec0;">No hay QR cargado</small>';
+                }
             }
         } catch (err) {
             console.error('Error:', err);
         }
         modalEditarNegocio.style.display = 'flex';
     };
+
+    // Vista previa del QR al seleccionar archivo
+    document.getElementById('edit-qr-transferencia').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const preview = document.getElementById('preview-qr');
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                preview.innerHTML = `<img src="${event.target.result}" style="max-width: 150px; border-radius: 8px; border: 2px solid #e2e8f0;">`;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.innerHTML = '<small style="color: #a0aec0;">No hay QR cargado</small>';
+        }
+    });
 
     window.cerrarModalEditarNegocio = () => {
         modalEditarNegocio.style.display = 'none';
@@ -743,6 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nit = document.getElementById('edit-nit').value.trim();
         const cajeros = document.getElementById('edit-cajeros').value;
         const passwordCajero = document.getElementById('edit-password-cajero').value;
+        const qrFile = document.getElementById('edit-qr-transferencia').files[0];
 
         if (!nombre || !nit || !/^\d+$/.test(nit) || cajeros < 1) {
             alert('Por favor, completa todos los campos correctamente');
@@ -754,13 +778,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const payload = {nombre, nit, cajeros: parseInt(cajeros)};
-            if (passwordCajero) payload.contrasena = passwordCajero;
+            const formData = new FormData();
+            formData.append('nombre', nombre);
+            formData.append('nit', nit);
+            formData.append('cajeros', parseInt(cajeros));
+            if (passwordCajero) formData.append('contrasena', passwordCajero);
+            if (qrFile) formData.append('qr_transferencia', qrFile);
 
             const res = await fetch('/api/admin/negocio/update', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: formData
             });
             const result = await res.json();
             if (result.success) {

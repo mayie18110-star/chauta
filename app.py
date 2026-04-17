@@ -141,6 +141,7 @@ def initialize_database():
         add_column_if_missing('config_tienda', 'admin_nombre', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'admin_email', 'VARCHAR(100)')
         add_column_if_missing('config_tienda', 'cajero_email', 'VARCHAR(100)')
+        add_column_if_missing('config_tienda', 'qr_transferencia_url', 'TEXT')
         add_column_if_missing('categorias', 'tienda_id', 'INT DEFAULT 1')
         add_column_if_missing('productos', 'tienda_id', 'INT DEFAULT 1')
 
@@ -1327,24 +1328,37 @@ def reset_password():
 
 @app.route('/api/admin/negocio/update', methods=['POST'])
 def update_negocio_admin():
-    data = request.json
     conn = get_db_connection()
     if not conn: return jsonify({'error': 'DB error'}), 500
     cursor = conn.cursor()
     try:
-        nombre = data.get('nombre', '').strip()
-        nit = data.get('nit', '').strip()
-        cajeros = data.get('cajeros')
-        contrasena = data.get('contrasena', '').strip()
+        nombre = request.form.get('nombre', '').strip()
+        nit = request.form.get('nit', '').strip()
+        cajeros = request.form.get('cajeros')
+        contrasena = request.form.get('contrasena', '').strip()
+        
         if not nombre or not nit or not str(nit).isdigit() or not cajeros:
             return jsonify({'success': False, 'message': 'Datos invalidos'}), 400
         if contrasena and (len(contrasena) < 6 or len(contrasena) > 18):
-             return jsonify({'success': False, 'message': 'Contrasena: 6-18'}), 400
+            return jsonify({'success': False, 'message': 'Contrasena: 6-18'}), 400
+        
+        # Manejar archivo QR si se proporciona
+        qr_url = None
+        qr_file = request.files.get('qr_transferencia')
+        if qr_file and qr_file.filename != '' and allowed_file(qr_file.filename):
+            filename = secure_filename(f"qr_{datetime.now().strftime('%y%m%d%H%M')}_{qr_file.filename}")
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            qr_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            qr_url = f'/static/img/{filename}'
+        
         query = "UPDATE config_tienda SET nombre_supermercado=%s, nit=%s, num_cajeros=%s"
         params = [nombre, nit, cajeros]
         if contrasena:
             query += ", contrasena=%s"
             params.append(contrasena)
+        if qr_url:
+            query += ", qr_transferencia_url=%s"
+            params.append(qr_url)
         query += " WHERE id=1"
         cursor.execute(query, params)
         conn.commit()

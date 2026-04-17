@@ -1433,7 +1433,15 @@ document.addEventListener('DOMContentLoaded', () => {
         modalPago.style.display = 'flex';
         inputPagoRecibido.value = '';
         cambioVal.innerText = '$0';
-        qrImg.src = '/static/img/qr.png?v=' + Date.now();
+        
+        // Mostrar QR guardado o imagen por defecto
+        if (tiendaConfig && tiendaConfig.qr_transferencia_url) {
+            qrImg.src = tiendaConfig.qr_transferencia_url + '?v=' + Date.now();
+            qrImg.style.display = 'block';
+        } else {
+            // Si no hay QR configurado, mostrar placeholder
+            qrImg.style.display = 'none';
+        }
 
         // Reset a efectivo por defecto
         seleccionarMetodoPago('efectivo');
