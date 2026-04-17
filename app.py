@@ -76,6 +76,36 @@ def sanitize_tienda_data(tienda):
     tienda.pop('admin_password', None)
     return tienda
 
+def migrate_plaintext_passwords(cursor, conn):
+    cursor.execute("SELECT id, contrasena, admin_password FROM config_tienda")
+    tiendas_existentes = cursor.fetchall()
+    cambios = 0
+
+    for tienda_id, contrasena_actual, admin_password_actual in tiendas_existentes:
+        updates = []
+        params = []
+
+        if contrasena_actual and not password_is_hashed(contrasena_actual):
+            updates.append("contrasena = %s")
+            params.append(hash_password(contrasena_actual))
+
+        if admin_password_actual and not password_is_hashed(admin_password_actual):
+            updates.append("admin_password = %s")
+            params.append(hash_password(admin_password_actual))
+
+        if updates:
+            params.append(tienda_id)
+            cursor.execute(
+                f"UPDATE config_tienda SET {', '.join(updates)} WHERE id = %s",
+                params
+            )
+            cambios += 1
+
+    if cambios:
+        conn.commit()
+
+    return cambios
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -197,26 +227,7 @@ def initialize_database():
         except Exception:
             pass
 
-        cursor.execute("SELECT id, contrasena, admin_password FROM config_tienda")
-        tiendas_existentes = cursor.fetchall()
-        for tienda_id, contrasena_actual, admin_password_actual in tiendas_existentes:
-            updates = []
-            params = []
-
-            if contrasena_actual and not password_is_hashed(contrasena_actual):
-                updates.append("contrasena = %s")
-                params.append(hash_password(contrasena_actual))
-
-            if admin_password_actual and not password_is_hashed(admin_password_actual):
-                updates.append("admin_password = %s")
-                params.append(hash_password(admin_password_actual))
-
-            if updates:
-                params.append(tienda_id)
-                cursor.execute(
-                    f"UPDATE config_tienda SET {', '.join(updates)} WHERE id = %s",
-                    params
-                )
+        migrate_plaintext_passwords(cursor, conn)
 
         # NUEVAS TABLAS PARA FIADOS
         cursor.execute('''
